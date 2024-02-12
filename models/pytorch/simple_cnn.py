@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from pathlib import Path
+from sklearn.metrics import accuracy_score, classification_report
 
 class Net(nn.Module):
     def __init__(self) -> None:
@@ -67,6 +68,12 @@ class SimpleCNN():
                 labels.append(labels_.tolist())
         return [np.array(predictions).flatten(), np.array(labels).flatten()]
     
-    def evaluate(self, testloader) -> float:
-        pass
+    def evaluate(self, y_true, y_pred) -> dict:
+        accuracy = accuracy_score(y_true, y_pred)
+        cls_report = classification_report(y_true, y_pred, output_dict=True)
+        
+        return {
+            'accuracy': accuracy,
+            'classification_report': cls_report,
+        }
     
