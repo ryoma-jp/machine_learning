@@ -1,3 +1,5 @@
+from typing import Tuple
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,8 +55,17 @@ class SimpleCNN():
             model_path = Path(output_dir, 'model.pth')
             torch.save(self.net.state_dict(), model_path)
             
-    def predict(self, testloader) -> torch.Tensor:
-        return self.net(testloader)
+    def predict(self, testloader) -> Tuple[np.ndarray, np.ndarray]:
+        predictions = []
+        labels = []
+        with torch.no_grad():
+            for data in testloader:
+                images, labels_ = data
+                outputs = self.net(images)
+                _, prediction = torch.max(outputs, 1)
+                predictions.append(prediction.tolist())
+                labels.append(labels_.tolist())
+        return [np.array(predictions).flatten(), np.array(labels).flatten()]
     
     def evaluate(self, testloader) -> float:
         pass
