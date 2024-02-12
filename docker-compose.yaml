@@ -13,7 +13,7 @@ services:
     tty: true
     stdin_open: true
     environment:
-      - PYTHONPATH="/workspace"
+      - PYTHONPATH=/workspace
     volumes:
       - type: bind
         source: .
