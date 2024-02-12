@@ -35,6 +35,7 @@ class SimpleCNN():
         self.optimizer = optim.SGD(self.net.parameters(), lr=0.001, momentum=0.9)
         
     def train(self, trainloader, epochs=2, output_dir=None) -> None:
+        log_interval = len(trainloader) // 20
         for epoch in range(epochs):
             running_loss = 0.0
             for i, data in enumerate(trainloader):
@@ -48,8 +49,8 @@ class SimpleCNN():
                 self.optimizer.step()
                 
                 running_loss += loss.item()
-                if ((i+1) % 1000 == 0):
-                    print(f'[EPOCH #{epoch+1}, Iter #{i+1}] loss: {running_loss/1000}')
+                if ((i+1) % log_interval == 0):
+                    print(f'[EPOCH #{epoch+1}, Iter #{i+1}] loss: {running_loss/log_interval}')
                     running_loss = 0.0
                     
         if (output_dir is not None):
@@ -64,9 +65,9 @@ class SimpleCNN():
                 images, labels_ = data
                 outputs = self.net(images)
                 _, prediction = torch.max(outputs, 1)
-                predictions.append(prediction.tolist())
-                labels.append(labels_.tolist())
-        return [np.array(predictions).flatten(), np.array(labels).flatten()]
+                predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
+                labels.extend(labels_.to('cpu').detach().numpy().tolist().copy())
+        return predictions, labels
     
     def evaluate(self, y_true, y_pred) -> dict:
         accuracy = accuracy_score(y_true, y_pred)
