@@ -11,48 +11,92 @@ from sklearn.metrics import accuracy_score, classification_report
 class Net(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.conv3_64 = nn.Conv2d(3, 64, 3, padding='same')
+        self.bn2d64_1 = nn.BatchNorm2d(64)
+        self.conv64_64 = nn.Conv2d(64, 64, 3, padding='same')
+        self.bn2d64_2 = nn.BatchNorm2d(64)
+        self.conv64_128 = nn.Conv2d(64, 128, 3, padding='same')
+        self.bn2d128_1 = nn.BatchNorm2d(128)
+        self.conv128_128 = nn.Conv2d(128, 128, 3, padding='same')
+        self.bn2d128_2 = nn.BatchNorm2d(128)
+        self.conv128_256 = nn.Conv2d(128, 256, 3, padding='same')
+        self.bn2d256_1 = nn.BatchNorm2d(256)
+        self.conv256_256 = nn.Conv2d(256, 256, 3, padding='same')
+        self.bn2d256_2 = nn.BatchNorm2d(256)
+
+        self.fc256_128 = nn.Linear(256, 128)
+        self.bn1d128_1 = nn.BatchNorm1d(128)
+        self.fc128_64 = nn.Linear(128, 64)
+        self.bn1d64_1 = nn.BatchNorm1d(64)
+        self.fc64_10 = nn.Linear(64, 10)
+
+        self.relu = nn.ReLU()
+        self.dropout2d = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.5)
+        self.softmax = nn.Softmax(dim=1)
+        self.pool = nn.MaxPool2d((2, 2), padding=0)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
     def forward(self, x) -> torch.Tensor:
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.bn2d64_1(self.relu(self.conv3_64(x)))
+        x = self.bn2d64_2(self.relu(self.conv64_64(x)))
+        x = self.dropout2d(self.pool(x))
+        
+        x = self.bn2d128_1(self.relu(self.conv64_128(x)))
+        x = self.bn2d128_2(self.relu(self.conv128_128(x)))
+        x = self.dropout2d(self.pool(x))
+        
+        x = self.bn2d256_1(self.relu(self.conv128_256(x)))
+        x = self.bn2d256_2(self.relu(self.conv256_256(x)))
+        x = self.pool(x)
+        
+        x = self.avgpool(x)
+        x = x.view(-1, 256)
+        x = self.dropout(self.bn1d128_1(self.relu(self.fc256_128(x))))
+        x = self.dropout(self.bn1d64_1(self.relu(self.fc128_64(x))))
+        
+        x = self.softmax(self.fc64_10(x))
         return x
     
 
 class SimpleCNN():
-    def __init__(self) -> None:
+    def __init__(self, device) -> None:
+        self.device = device
         self.net = Net()
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=0.001, momentum=0.9)
+        self.net.to(self.device)
         
-    def train(self, trainloader, epochs=2, output_dir=None) -> None:
-        log_interval = len(trainloader) // 20
+    def train(self, trainloader, epochs=10, lr=0.0001, wd=0.01, output_dir=None) -> None:
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+        
+        # --- Caluculate first loss ---
+        running_loss = 0.0
+        for data in trainloader:
+            inputs, labels = data
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
+            outputs = self.net(inputs)
+            loss = criterion(outputs, labels)
+            running_loss += loss.item()
+        print(f'[EPOCH #0] loss: {running_loss/len(trainloader)}')
+        
+        # --- Training loop ---
         for epoch in range(epochs):
             running_loss = 0.0
-            for i, data in enumerate(trainloader):
+            for data in trainloader:
                 inputs, labels = data
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
                 
-                self.optimizer.zero_grad()
+                optimizer.zero_grad()
                 
                 outputs = self.net(inputs)
-                loss = self.criterion(outputs, labels)
+                loss = criterion(outputs, labels)
                 loss.backward()
-                self.optimizer.step()
+                optimizer.step()
                 
                 running_loss += loss.item()
-                if ((i+1) % log_interval == 0):
-                    print(f'[EPOCH #{epoch+1}, Iter #{i+1}] loss: {running_loss/log_interval}')
-                    running_loss = 0.0
-                    
+            print(f'[EPOCH #{epoch+1}] loss: {running_loss/len(trainloader)}')
+            
+        # --- Save model ---
         if (output_dir is not None):
             model_path = Path(output_dir, 'model.pth')
             torch.save(self.net.state_dict(), model_path)
@@ -62,8 +106,9 @@ class SimpleCNN():
         labels = []
         with torch.no_grad():
             for data in testloader:
-                images, labels_ = data
-                outputs = self.net(images)
+                inputs, labels_ = data
+                inputs, labels_ = inputs.to(self.device), labels_.to(self.device)
+                outputs = self.net(inputs)
                 _, prediction = torch.max(outputs, 1)
                 predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
                 labels.extend(labels_.to('cpu').detach().numpy().tolist().copy())
