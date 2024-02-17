@@ -29,7 +29,13 @@ docker-compose logs ml
 
 ## Dataset
 
-Open Dataset is used.
+Open Dataset is used.  
+Supported dataset is below.
+
+|Name|Task|URL|
+|---|---|---|
+|CIFAR-10 (PyTorch format)|Image Classification|[LINK](https://www.cs.toronto.edu/~kriz/cifar.html)|
+
 
 ## Algorithms
 
