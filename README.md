@@ -32,10 +32,10 @@ docker-compose logs ml
 Open Dataset is used.  
 Supported dataset is below.
 
-|Name|Task|URL|
-|---|---|---|
-|CIFAR-10 (PyTorch format)|Image Classification|[LINK](https://www.cs.toronto.edu/~kriz/cifar.html)|
-
+|Name|Task|
+|---|---|
+|[CIFAR-10 (PyTorch format)](https://www.cs.toronto.edu/~kriz/cifar.html)|Image Classification|
+|[Food-101](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/)|Image Classification|
 
 ## Algorithms
 

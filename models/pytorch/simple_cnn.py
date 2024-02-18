@@ -4,14 +4,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torchinfo import summary
 
 from pathlib import Path
 from sklearn.metrics import accuracy_score, classification_report
 
 class Net(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, input_size, classes_num) -> None:
+        '''Initialize Net
+        
+        Args:
+            input_size (tuple): Input size of the model (C, H, W)
+            classes_num (int): Number of classes
+        '''
         super().__init__()
-        self.conv3_64 = nn.Conv2d(3, 64, 3, padding='same')
+        channels, height, width = input_size
+        self.conv3_64 = nn.Conv2d(channels, 64, 3, padding='same')
         self.bn2d64_1 = nn.BatchNorm2d(64)
         self.conv64_64 = nn.Conv2d(64, 64, 3, padding='same')
         self.bn2d64_2 = nn.BatchNorm2d(64)
@@ -24,18 +32,19 @@ class Net(nn.Module):
         self.conv256_256 = nn.Conv2d(256, 256, 3, padding='same')
         self.bn2d256_2 = nn.BatchNorm2d(256)
 
-        self.fc256_128 = nn.Linear(256, 128)
+        self.flatten_nodes = 256 * (height//16) * (width//16)
+        self.fcn_512 = nn.Linear(self.flatten_nodes, 512)
+        self.bn1d512_1 = nn.BatchNorm1d(512)
+        self.fc512_128 = nn.Linear(512, 128)
         self.bn1d128_1 = nn.BatchNorm1d(128)
-        self.fc128_64 = nn.Linear(128, 64)
-        self.bn1d64_1 = nn.BatchNorm1d(64)
-        self.fc64_10 = nn.Linear(64, 10)
+        self.fc_out = nn.Linear(128, classes_num)
 
         self.relu = nn.ReLU()
         self.dropout2d = nn.Dropout(0.5)
         self.dropout = nn.Dropout(0.5)
         self.softmax = nn.Softmax(dim=1)
         self.pool = nn.MaxPool2d((2, 2), padding=0)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.avgpool = nn.AdaptiveAvgPool2d((height//16, width//16))
 
     def forward(self, x) -> torch.Tensor:
         x = self.bn2d64_1(self.relu(self.conv3_64(x)))
@@ -51,19 +60,28 @@ class Net(nn.Module):
         x = self.pool(x)
         
         x = self.avgpool(x)
-        x = x.view(-1, 256)
-        x = self.dropout(self.bn1d128_1(self.relu(self.fc256_128(x))))
-        x = self.dropout(self.bn1d64_1(self.relu(self.fc128_64(x))))
+        x = x.view(-1, self.flatten_nodes)
+        x = self.dropout(self.bn1d512_1(self.relu(self.fcn_512(x))))
+        x = self.dropout(self.bn1d128_1(self.relu(self.fc512_128(x))))
         
-        x = self.softmax(self.fc64_10(x))
+        x = self.softmax(self.fc_out(x))
         return x
     
 
 class SimpleCNN():
-    def __init__(self, device) -> None:
+    def __init__(self, device, input_size, num_classes) -> None:
+        '''Initialize SimpleCNN
+        
+        Args:
+            device (torch.device): Device to use
+            input_size (tuple): Input size of the model (N, C, H, W)
+            num_classes (int): Number of classes
+        '''
         self.device = device
-        self.net = Net()
+        net_input_size = input_size[1:]
+        self.net = Net(net_input_size, num_classes)
         self.net.to(self.device)
+        print(summary(self.net, input_size=input_size))
         
     def train(self, trainloader, epochs=10, lr=0.0001, wd=0.01, output_dir=None) -> None:
         criterion = nn.CrossEntropyLoss()
