@@ -1,4 +1,5 @@
 
+import os
 from pathlib import Path
 from urllib import request
 from utils.utils import extract_tar
@@ -44,16 +45,42 @@ class _DataLoaderFood101PyTorch():
         filename = 'food-101.tar.gz'
         filepath = Path(dataset_dir, filename)
         if (not filepath.exists()):
+            # --- Download and extract dataset ---
             Path(dataset_dir).mkdir(exist_ok=True, parents=True)
             print(f'Download {filename} from {url}')
             request.urlretrieve(url, filepath)
             print(f'Extract {filename} to {dataset_dir}')
             extract_tar(filepath, dataset_dir)
             
-        # https://reafnex.net/ai/pytorch-use-imagefolder/
-        images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/images/'), transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(images, batch_size=batch_size, shuffle=True, num_workers=2)
-        self.class_name = images.classes
+            # --- Load meta data ---
+            with open(f'{dataset_dir}/food-101/meta/train.txt', 'r') as f:
+                train_file_list = [line + '.jpg' for line in f.read().splitlines()]
+            with open(f'{dataset_dir}/food-101/meta/test.txt', 'r') as f:
+                test_file_list = [line + '.jpg' for line in f.read().splitlines()]
+            with open(f'{dataset_dir}/food-101/meta/classes.txt', 'r') as f:
+                class_list = [line for line in f.read().splitlines()]
+            
+            # --- Create symbolic links ---
+            train_images_dir = Path(dataset_dir, 'food-101/train_images')
+            for class_ in class_list:
+                os.makedirs(Path(train_images_dir, class_), exist_ok=True)
+            for train_file in train_file_list:
+                os.symlink(Path(dataset_dir, 'food-101/images', train_file), Path(train_images_dir, train_file))
+            
+            test_images_dir = Path(dataset_dir, 'food-101/test_images')
+            for class_ in class_list:
+                os.makedirs(Path(test_images_dir, class_), exist_ok=True)
+            for test_file in test_file_list:
+                os.symlink(Path(dataset_dir, 'food-101/images', test_file), Path(test_images_dir, test_file))
+        
+        train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/train_images/'), transform=transform)
+        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=True, num_workers=2)
+        
+        test_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/test_images/'), transform=transform)
+        self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=True, num_workers=2)
+        
+        self.class_name = train_images.classes
+
 
 class DataLoader():
     '''Data Loader
