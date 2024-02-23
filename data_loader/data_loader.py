@@ -29,7 +29,11 @@ class _DataLoaderCifar10PyTorch():
                                                 shuffle=False, num_workers=2)
 
         self.classe_name = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-        
+    
+    def inverse_normalize(self, img):
+        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
+        return transform(img)
+    
 class _DataLoaderFood101PyTorch():
     '''Data Loader for ObjectNet dataset for PyTorch
     This class provides to load ObjectNet dataset for PyTorch.
@@ -80,7 +84,11 @@ class _DataLoaderFood101PyTorch():
         self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=True, num_workers=2)
         
         self.class_name = train_images.classes
-
+    
+    def inverse_normalize(self, img):
+        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
+        return transform(img)
+    
 
 class DataLoader():
     '''Data Loader
