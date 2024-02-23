@@ -1,4 +1,5 @@
 from typing import Tuple
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -98,6 +99,7 @@ class SimpleCNN():
         print(f'[EPOCH #0] loss: {running_loss/len(trainloader)}')
         
         # --- Training loop ---
+        train_start = time.time()
         for epoch in range(epochs):
             running_loss = 0.0
             for data in trainloader:
@@ -112,10 +114,12 @@ class SimpleCNN():
                 optimizer.step()
                 
                 running_loss += loss.item()
-            print(f'[EPOCH #{epoch+1}] loss: {running_loss/len(trainloader)}')
+            print(f'[EPOCH #{epoch+1}, elapsed time: {time.time()-train_start:.3f}[sec]] loss: {running_loss/len(trainloader)}')
             
         # --- Save model ---
         if (output_dir is not None):
+            if (not Path(output_dir).exists()):
+                Path(output_dir).mkdir(parents=True, exist_ok=True)
             model_path = Path(output_dir, 'model.pth')
             torch.save(self.net.state_dict(), model_path)
             
