@@ -41,3 +41,14 @@ Supported dataset is below.
 
 ### Image Classification
 
+|Name|Framework|Description|
+|---|---|---|
+|[SimpleCNN](./models/pytorch/simple_cnn.py)|PyTorch|Simple structure base on convolution layers|
+
+### Explainable
+
+Explainable methods to show the reason where the model looked when inference.
+
+|Method|Description|Reference|
+|---|---|---|
+|[Grad-CAM](./explainable_ai/pytorch/grad_cam)|Weight the 2D activations by the average gradient|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|
