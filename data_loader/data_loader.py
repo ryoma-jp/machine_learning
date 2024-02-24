@@ -12,7 +12,7 @@ class _DataLoaderCifar10PyTorch():
     '''Data Loader for CIFAR-10 dataset for PyTorch
     This class provides to load CIFAR-10 dataset for PyTorch.
     '''
-    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32) -> None:
+    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -21,12 +21,12 @@ class _DataLoaderCifar10PyTorch():
         trainset = torchvision.datasets.CIFAR10(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=True, num_workers=2)
+                                                shuffle=shuffle_trainloader, num_workers=2)
 
         testset = torchvision.datasets.CIFAR10(root=dataset_dir, train=False,
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=False, num_workers=2)
+                                                shuffle=shuffle_testloader, num_workers=2)
 
         self.classe_name = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     
@@ -38,7 +38,7 @@ class _DataLoaderFood101PyTorch():
     '''Data Loader for ObjectNet dataset for PyTorch
     This class provides to load ObjectNet dataset for PyTorch.
     '''
-    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32) -> None:
+    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.Resize((128, 128)),
             transforms.ToTensor(),
@@ -78,10 +78,12 @@ class _DataLoaderFood101PyTorch():
                 os.symlink(Path(dataset_dir, 'food-101/images', test_file), Path(test_images_dir, test_file))
         
         train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/train_images/'), transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=True, num_workers=2)
+        self.train_file_list = [train_file[len(f'{dataset_dir}/food-101/train_images/'):] for train_file, _ in train_images.imgs]
+        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
         
         test_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/test_images/'), transform=transform)
-        self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=True, num_workers=2)
+        self.test_file_list = [test_file[len(f'{dataset_dir}/food-101/test_images/'):] for test_file, _ in test_images.imgs]
+        self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=shuffle_testloader, num_workers=2)
         
         self.class_name = train_images.classes
     
