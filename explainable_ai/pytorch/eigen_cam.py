@@ -6,6 +6,7 @@ from .utils.svd_on_activations import get_2d_projection
 
 class EigenCAM(BaseCAM):
     def __init__(self, model, target_layers, 
+                 output_dir=None,
                  reshape_transform=None):
         super(EigenCAM, self).__init__(model,
                                        target_layers,
