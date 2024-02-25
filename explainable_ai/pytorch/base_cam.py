@@ -181,6 +181,7 @@ class BaseCAM:
     def __call__(self,
                  input_tensor: torch.Tensor,
                  targets: List[torch.nn.Module] = None,
+                 targets_names: List[torch.Tensor] = None,
                  aug_smooth: bool = False,
                  eigen_smooth: bool = False) -> np.ndarray:
 
