@@ -51,4 +51,5 @@ Explainable methods to show the reason where the model looked when inference.
 
 |Method|Description|Reference|
 |---|---|---|
-|[Grad-CAM](./explainable_ai/pytorch/grad_cam)|Weight the 2D activations by the average gradient|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|
+|[Grad-CAM](./explainable_ai/pytorch/grad_cam.py)|Weight the 2D activations by the average gradient|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|
+|[Eigen-CAM](./explainable_ai/pytorch/eigen_cam.py)|Takes the first principle component of the 2D Activations (no class discrimination, but seems to give great results)|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|

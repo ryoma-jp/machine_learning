@@ -5,6 +5,7 @@ from PIL import Image
 from pathlib import Path
 
 from explainable_ai.pytorch.grad_cam import GradCAM
+from explainable_ai.pytorch.eigen_cam import EigenCAM
 from explainable_ai.pytorch.utils.image import show_cam_on_image
 
 def ExplainableAI(method, model, target_layer, input_tensor, input_images, image_names=None, output_dir=None):
@@ -23,6 +24,7 @@ def ExplainableAI(method, model, target_layer, input_tensor, input_images, image
     # --- Define the explainable AI method ---
     methods = {
         "grad_cam": GradCAM,
+        "eigen_cam": EigenCAM,
     }
     cam_func = methods[method]
     
