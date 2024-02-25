@@ -47,8 +47,8 @@ def ExplainableAI(method, model, target_layer, input_tensor, input_images, targe
             cam_images.append(cam_image)
             
             if (output_dir is not None):
-                Path(output_dir, 'cam', image_name).parent.mkdir(parents=True, exist_ok=True)
-                output_path = f"{output_dir}/cam/{image_name}"
+                Path(output_dir, 'heatmap', image_name).parent.mkdir(parents=True, exist_ok=True)
+                output_path = f"{output_dir}/heatmap/{image_name}"
                 cv2.imwrite(output_path, cam_image)
                 
                 Path(output_dir, 'input_image', image_name).parent.mkdir(parents=True, exist_ok=True)

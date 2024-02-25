@@ -51,15 +51,12 @@ class ParameterSpaceSaliency():
         torch.save({'mean': filter_testset_mean_abs_grad, 'std': filter_testset_std_abs_grad}, filter_stats_file)
         
         inv_transform_test = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
-        print(torch.unsqueeze(input_tensor[0], 0).shape)
         grads_to_save, filter_saliency = self.compute_input_space_saliency(
-                                            torch.unsqueeze(input_tensor[0], 0).to(self.device), torch.tensor([targets[0]]), self.model,
+                                            input_tensor.to(self.device), torch.tensor(targets), self.model,
                                             filter_testset_mean_abs_grad, filter_testset_std_abs_grad, 
                                             inv_transform_test, targets_names)
-        gradients_heatmap = self.save_gradients(grads_to_save, input_tensor[0], inv_transform_test)
-        gradients_heatmap.shape
+        gradients_heatmap = self.save_gradients(grads_to_save, input_tensor, inv_transform_test)
         
-        print(grads_to_save, filter_saliency)
         return gradients_heatmap
     
     def __enter__(self):
@@ -73,9 +70,9 @@ class ParameterSpaceSaliency():
             return True
         
     def save_gradients(self, grads_to_save, reference_image, inv_transform_test):
-        input_ch, input_h, input_w = reference_image.shape
+        input_num, input_ch, input_h, input_w = reference_image.shape
         grads_to_save, _ = grads_to_save.max(dim=1)
-        grads_to_save = grads_to_save.detach().cpu().numpy().reshape((input_h, input_w))
+        grads_to_save = grads_to_save.detach().cpu().numpy().reshape((input_num, input_h, input_w))
         grads_to_save = np.abs(grads_to_save)
         # grads_to_save[grads_to_save < 0] = 0.0
 
@@ -102,9 +99,6 @@ class ParameterSpaceSaliency():
             reference_outputs = net(reference_inputs)
             _, reference_predicted = reference_outputs.max(1)
             
-            print(reference_predicted)
-            print(readable_labels)
-            print(reference_targets)
             # Log classes:
             print("""\n
             Image target label: {}
@@ -117,11 +111,10 @@ class ParameterSpaceSaliency():
                 readable_labels[reference_predicted[0].item()]))
 
         #Compute filter saliency
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        filter_saliency_model = SaliencyModel(net, nn.CrossEntropyLoss(), device='cuda', mode='std',
+        filter_saliency_model = SaliencyModel(net, nn.CrossEntropyLoss(), device=self.device, mode='std',
                                             aggregation='filter_wise', signed=False, logit=False,
                                             logit_difference=False)
-        reference_inputs, reference_targets = reference_inputs.to(device), reference_targets.to(device)
+        reference_inputs, reference_targets = reference_inputs.to(self.device), reference_targets.to(self.device)
 
         grad_samples = []
         #Errors are a fragile concept, we should not perturb too much, we will end up on the object
@@ -139,7 +132,7 @@ class ParameterSpaceSaliency():
             filter_saliency = filter_saliency_model(
                 perturbed_inputs, reference_targets,
                 testset_mean_abs_grad=testset_mean_stat,
-                testset_std_abs_grad=testset_std_stat).to(device)
+                testset_std_abs_grad=testset_std_stat).to(self.device)
 
             #Find the top-k salient filters
             if False:
