@@ -13,7 +13,7 @@ from .parameter_space_saliency.utils import show_heatmap_on_image, test_and_find
 from .parameter_space_saliency.saliency_model_backprop import SaliencyModel, find_testset_saliency
 
 class ParameterSpaceSaliency():
-    def __init__(self, model, target_layers=None, output_dir='output'):
+    def __init__(self, model, target_layers=None, output_dir='output', input_tensor=None, targets=None):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = model.to(self.device)
         self.output_dir = output_dir
@@ -41,19 +41,25 @@ class ParameterSpaceSaliency():
         print('Total filters:', total)
         print('Total layers:', len(layer_to_filter_id))
         
+        filter_stats_file = Path(self.output_dir, 'filter_stats.pth')
+        if ((input_tensor is not None) and (targets is not None)):
+            self.filter_testset_mean_abs_grad, self.filter_testset_std_abs_grad = find_testset_saliency(self.model, input_tensor, targets, 'filter_wise')
+            
+            torch.save({'mean': self.filter_testset_mean_abs_grad, 'std': self.filter_testset_std_abs_grad}, filter_stats_file)
+        else:
+            filter_stats = torch.load(filter_stats_file)
+            self.filter_testset_mean_abs_grad = filter_stats['mean']
+            self.filter_testset_std_abs_grad = filter_stats['std']
+        
     def __call__(self,
                  input_tensor: torch.Tensor,
                  targets: List,
                  targets_names: List):
-        filter_testset_mean_abs_grad, filter_testset_std_abs_grad = find_testset_saliency(self.model, input_tensor, targets, 'filter_wise')
-        
-        filter_stats_file = Path(self.output_dir, 'filter_stats.pth')
-        torch.save({'mean': filter_testset_mean_abs_grad, 'std': filter_testset_std_abs_grad}, filter_stats_file)
         
         inv_transform_test = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
         grads_to_save, filter_saliency = self.compute_input_space_saliency(
                                             input_tensor.to(self.device), torch.tensor(targets), self.model,
-                                            filter_testset_mean_abs_grad, filter_testset_std_abs_grad, 
+                                            self.filter_testset_mean_abs_grad, self.filter_testset_std_abs_grad, 
                                             inv_transform_test, targets_names)
         gradients_heatmap = self.save_gradients(grads_to_save, input_tensor, inv_transform_test)
         
