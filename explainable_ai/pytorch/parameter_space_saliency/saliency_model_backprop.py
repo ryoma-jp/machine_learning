@@ -3,6 +3,7 @@ import torch.autograd as autograd
 import torch
 import torch.nn as nn
 from .utils import show_heatmap_on_image, AverageMeter
+from utils.utils import SinglePassVarianceComputation
 import time
 
 class SaliencyModel(nn.Module):
@@ -80,7 +81,7 @@ class SaliencyModel(nn.Module):
             norm_saliency = naive_saliency / testset_mean_abs_grad.to(self.device)
             return norm_saliency
 
-def find_testset_saliency(net, input_tensor, targets, aggregation):
+def find_testset_saliency(net, calibloader, aggregation):
     """find_saliency is a basic parameter_saliency method: could be naive, could be averaging across filters, tensors, layers, etc
     Return average magnitude of gradient across samples in the testset and std of that"""
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -90,27 +91,34 @@ def find_testset_saliency(net, input_tensor, targets, aggregation):
     iter_time = AverageMeter()
     end = time.time()
     
-    testset_inputs, testset_targets = input_tensor.to(device), targets.to(device)
-    testset_outputs = net(testset_inputs)
-    _, testset_predicted = testset_outputs.max(1)
+    #input_tensor, targets = next(iter(calibloader))
+    #testset_inputs, testset_targets = input_tensor.to(device), targets.to(device)
+    #testset_outputs = net(testset_inputs)
+    #_, testset_predicted = testset_outputs.max(1)
 
-    filter_saliency_model = SaliencyModel(net, nn.CrossEntropyLoss(), device='cuda', mode='naive',
+    filter_saliency_model = SaliencyModel(net, nn.CrossEntropyLoss(), device=device, mode='naive',
                                             aggregation=aggregation, signed=False, logit=False,
                                             logit_difference=False)
-    testset_grad = filter_saliency_model(testset_inputs, testset_targets).detach().to(device)
-
-    # oldM in Welford's method (https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/)
-    testset_mean_abs_grad_prev = torch.zeros_like(testset_grad, dtype=torch.float64)
-    testset_mean_abs_grad = testset_grad
-    # print(testset_mean_abs_grad)
-    testset_std_abs_grad = (testset_grad - testset_mean_abs_grad) * (testset_grad - testset_mean_abs_grad_prev)
-
-    testset_std_abs_grad = testset_std_abs_grad / float(len(input_tensor) - 1)  # Unbiased estimator of variance
-    print('Variance:', testset_std_abs_grad)
-    testset_std_abs_grad = torch.sqrt(testset_std_abs_grad)
-    print('Std:', testset_std_abs_grad)
-    print('Mean:', testset_mean_abs_grad)
-    print('Testset_grads_shape:{}'.format(testset_mean_abs_grad.shape))
+    spvc = SinglePassVarianceComputation()
+    for input_tensor, targets in calibloader:
+        testset_inputs, testset_targets = input_tensor.to(device), targets.to(device)
+        testset_grad = filter_saliency_model(testset_inputs, testset_targets).detach().to(device)
+        
+        testset_mean_abs_grad, testset_std_abs_grad = spvc(testset_grad)
+#    testset_grad = filter_saliency_model(testset_inputs, testset_targets).detach().to(device)
+#
+#    # oldM in Welford's method (https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/)
+#    testset_mean_abs_grad_prev = torch.zeros_like(testset_grad, dtype=torch.float64)
+#    testset_mean_abs_grad = testset_grad
+#    # print(testset_mean_abs_grad)
+#    testset_std_abs_grad = (testset_grad - testset_mean_abs_grad) * (testset_grad - testset_mean_abs_grad_prev)
+#
+#    testset_std_abs_grad = testset_std_abs_grad / float(len(input_tensor) - 1)  # Unbiased estimator of variance
+#    print('Variance:', testset_std_abs_grad)
+#    testset_std_abs_grad = torch.sqrt(testset_std_abs_grad)
+#    print('Std:', testset_std_abs_grad)
+#    print('Mean:', testset_mean_abs_grad)
+#    print('Testset_grads_shape:{}'.format(testset_mean_abs_grad.shape))
 
     return testset_mean_abs_grad, testset_std_abs_grad
 

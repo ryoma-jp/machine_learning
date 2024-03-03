@@ -3,6 +3,24 @@ import os
 import tarfile
 from pathlib import Path
 
+class SinglePassVarianceComputation():
+    def __init__(self):
+        self.M = 0
+        self.S = 0
+        self.N = 0
+
+    def __call__(self, batch):
+        for k in range(len(batch)):
+            x = batch[k]
+            oldM = self.M
+            self.N = self.N + 1
+            self.M = self.M + (x-self.M) / self.N
+            self.S = self.S + (x-self.M) * (x-oldM)
+
+        mean = self.M
+        var = self.S / (self.N-1)
+        return mean, var
+
 def extract_tar(tar, path='.'):
     with tarfile.open(tar) as tar:
         # --- CVE-2007-4559 start ---

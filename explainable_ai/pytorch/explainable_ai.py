@@ -10,7 +10,7 @@ from explainable_ai.pytorch.pss import ParameterSpaceSaliency
 from explainable_ai.pytorch.utils.image import show_cam_on_image
 
 class ExplainableAI():
-    def __init__(self, method, model, target_layer, output_dir=None, calib_tensor=None, calib_targets=None):
+    def __init__(self, method, model, target_layer, output_dir=None, calibloader=None):
         """Explainable AI method for PyTorch models.
         
         Args:
@@ -18,6 +18,7 @@ class ExplainableAI():
             - model (torch.nn.Module): The PyTorch model to explain.
             - target_layer (torch.nn.Module): The target layer of the model to explain.
             - output_dir (str): The directory to save the output images. If None, the images are not saved.
+            - calibloader (torch.utils.data.DataLoader): The calibration dataset to calibrate the explainable AI method. If None, the calibration is not performed.
         """
         # --- Define the explainable AI method ---
         methods = {
@@ -28,7 +29,7 @@ class ExplainableAI():
         xai_func = methods[method]
         
         self.output_dir = output_dir
-        self.xai = xai_func(model=model, target_layers=target_layer, output_dir=self.output_dir, input_tensor=calib_tensor, targets=calib_targets)
+        self.xai = xai_func(model=model, target_layers=target_layer, output_dir=self.output_dir, calibloader=calibloader)
         
     def __call__(self, input_images, input_tensor, targets=None, targets_names=None, image_names=None):
         """Run the explainable AI method.

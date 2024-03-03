@@ -13,7 +13,7 @@ from .parameter_space_saliency.utils import show_heatmap_on_image, test_and_find
 from .parameter_space_saliency.saliency_model_backprop import SaliencyModel, find_testset_saliency
 
 class ParameterSpaceSaliency():
-    def __init__(self, model, target_layers=None, output_dir='output', input_tensor=None, targets=None):
+    def __init__(self, model, target_layers=None, output_dir='output', calibloader=None):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = model.to(self.device)
         self.output_dir = output_dir
@@ -42,8 +42,8 @@ class ParameterSpaceSaliency():
         print('Total layers:', len(layer_to_filter_id))
         
         filter_stats_file = Path(self.output_dir, 'filter_stats.pth')
-        if ((input_tensor is not None) and (targets is not None)):
-            self.filter_testset_mean_abs_grad, self.filter_testset_std_abs_grad = find_testset_saliency(self.model, input_tensor, targets, 'filter_wise')
+        if (calibloader is not None):
+            self.filter_testset_mean_abs_grad, self.filter_testset_std_abs_grad = find_testset_saliency(self.model, calibloader, 'filter_wise')
             
             torch.save({'mean': self.filter_testset_mean_abs_grad, 'std': self.filter_testset_std_abs_grad}, filter_stats_file)
         else:
