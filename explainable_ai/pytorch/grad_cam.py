@@ -5,10 +5,9 @@ from .base_cam import BaseCAM
 class GradCAM(BaseCAM):
     def __init__(self, model, target_layers,
                  output_dir=None,
-                 reshape_transform=None):
-        super(
-            GradCAM,
-            self).__init__(
+                 reshape_transform=None,
+                 calibloader=None):
+        super().__init__(
             model,
             target_layers,
             reshape_transform)
