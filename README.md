@@ -53,3 +53,4 @@ Explainable methods to show the reason where the model looked when inference.
 |---|---|---|
 |[Grad-CAM](./explainable_ai/pytorch/grad_cam.py)|Weight the 2D activations by the average gradient|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|
 |[Eigen-CAM](./explainable_ai/pytorch/eigen_cam.py)|Takes the first principle component of the 2D Activations (no class discrimination, but seems to give great results)|[pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam/tree/51ae19245f655cf0ee334db2a945ceb1a4d6df59)|
+|[Parameter Space Saliency Maps](./explainable_ai/pytorch/pss.py)| Identify and analyze the network parameters,  which are responsible for erroneous decisions.|[parameter-space-saliency](https://github.com/LevinRoman/parameter-space-saliency/tree/0e3b3d69c6e222aee6af0264d7ce3ddc6d19744e)|
