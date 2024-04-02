@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from urllib import request
-from utils.utils import extract_tar
+from utils.utils import extract_tar, extract_zip
 
 import torch
 import torchvision
@@ -91,17 +91,42 @@ class _DataLoaderFood101PyTorch():
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
         return transform(img)
     
+class _DataLoaderOfficeHomePyTorch():
+    '''Data Loader for ObjectNet dataset for PyTorch
+    This class provides to load ObjectNet dataset for PyTorch.
+    '''
+    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+        # --- Extract dataset ---
+        filename = 'OfficeHomeDataset_10072016.zip'
+        filepath = Path(dataset_dir, filename)
+        extract_zip(str(filepath), dataset_dir)
+        
+        # --- Load dataset ---
+        transform = transforms.Compose([
+            transforms.Resize((227, 227)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        
+        train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'OfficeHomeDataset_10072016/Art/'), transform=transform)
+        self.train_file_list = [train_file[len(f'{dataset_dir}/OfficeHomeDataset_10072016/Art/'):] for train_file, _ in train_images.imgs]
+        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
+        
+        self.class_name = train_images.classes
+        
 
 class DataLoader():
     '''Data Loader
     Base class for data loaders. All data loaders should inherit from this class.
     This class privides to load below datasets:
         - cifar10_pytorch (CIFAR-10 dataset for PyTorch)
+        - food101_pytorch (Food-101 dataset for PyTorch)
     '''
     DATASET_NAMES = ['cifar10_pytorch']
     FUNCTION_TABLE = {
         'cifar10_pytorch': _DataLoaderCifar10PyTorch,
         'food101_pytorch': _DataLoaderFood101PyTorch,
+        'officehome_pytorch': _DataLoaderOfficeHomePyTorch,
     }
     
     def __init__(self, dataset_name=DATASET_NAMES[0], dataset_dir='/tmp/dataset', batch_size=32) -> None:

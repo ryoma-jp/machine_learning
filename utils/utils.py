@@ -1,6 +1,7 @@
 
 import os
 import tarfile
+import zipfile
 from pathlib import Path
 
 class SinglePassVarianceComputation():
@@ -45,3 +46,6 @@ def extract_tar(tar, path='.'):
         safe_extract(tar, path=path)
         # --- CVE-2007-4559 end ---
 
+def extract_zip(zip, path='.'):
+    with zipfile.ZipFile(zip, 'r') as zip_ref:
+        zip_ref.extractall(path)
