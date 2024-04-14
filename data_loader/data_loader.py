@@ -12,8 +12,9 @@ class _DataLoaderCifar10PyTorch():
     '''Data Loader for CIFAR-10 dataset for PyTorch
     This class provides to load CIFAR-10 dataset for PyTorch.
     '''
-    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
+            transforms.Resize(resize),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
@@ -38,9 +39,9 @@ class _DataLoaderFood101PyTorch():
     '''Data Loader for ObjectNet dataset for PyTorch
     This class provides to load ObjectNet dataset for PyTorch.
     '''
-    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(128, 128), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
-            transforms.Resize((128, 128)),
+            transforms.Resize(resize),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
@@ -95,7 +96,7 @@ class _DataLoaderOfficeHomePyTorch():
     '''Data Loader for ObjectNet dataset for PyTorch
     This class provides to load ObjectNet dataset for PyTorch.
     '''
-    def __init__(self, dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(227, 227), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         # --- Extract dataset ---
         filename = 'OfficeHomeDataset_10072016.zip'
         filepath = Path(dataset_dir, filename)
@@ -103,7 +104,7 @@ class _DataLoaderOfficeHomePyTorch():
         
         # --- Load dataset ---
         transform = transforms.Compose([
-            transforms.Resize((227, 227)),
+            transforms.Resize(resize),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
@@ -123,12 +124,20 @@ class DataLoader():
         - food101_pytorch (Food-101 dataset for PyTorch)
     '''
     DATASET_NAMES = ['cifar10_pytorch']
+    DEFAULT_SIZE = {
+        'cifar10_pytorch': (32, 32),
+        'food101_pytorch': (128, 128),
+        'officehome_pytorch': (227, 227),
+    }
     FUNCTION_TABLE = {
         'cifar10_pytorch': _DataLoaderCifar10PyTorch,
         'food101_pytorch': _DataLoaderFood101PyTorch,
         'officehome_pytorch': _DataLoaderOfficeHomePyTorch,
     }
     
-    def __init__(self, dataset_name=DATASET_NAMES[0], dataset_dir='/tmp/dataset', batch_size=32) -> None:
-        self.dataset = self.FUNCTION_TABLE[dataset_name](dataset_dir, batch_size)
+    def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32) -> None:
+        if (resize is None):
+            resize = self.DEFAULT_SIZE[dataset_name]
+            
+        self.dataset = self.FUNCTION_TABLE[dataset_name](resize=resize, dataset_dir=dataset_dir, batch_size=batch_size)
         

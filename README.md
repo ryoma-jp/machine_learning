@@ -34,9 +34,13 @@ Supported dataset is below.
 
 |Name|Task|License / Term of Use|
 |---|---|---|
-|[CIFAR-10 (PyTorch format)](https://www.cs.toronto.edu/~kriz/cifar.html)|Image Classification|Unknown (Not specified)|
+|[CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html)|Image Classification|Unknown (Not specified)|
 |[Food-101](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/)|Image Classification|Unknown (Not specified)|
 |[Office-Home Dataset](https://www.hemanthdv.org/officeHomeDataset.html)|Domain Adaptaion|Custom (non-commercial research and educational purposes). See [Fair Use Notice](https://www.hemanthdv.org/officeHomeDataset.html)|
+
+### References
+
+- [Datasets (Image Classification)](https://paperswithcode.com/datasets?task=image-classification)
 
 ## Algorithms
 
@@ -45,6 +49,7 @@ Supported dataset is below.
 |Name|Framework|Description|
 |---|---|---|
 |[SimpleCNN](./models/pytorch/simple_cnn.py)|PyTorch|Simple structure base on convolution layers|
+|[VGG16](./models/pytorch/vgg16.py)|PyTorch|VGG16|
 
 ### Explainable
 
