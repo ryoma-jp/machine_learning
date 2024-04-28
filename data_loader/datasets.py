@@ -12,7 +12,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class Coco2014ClassificationDataset(Dataset):
-    def __init__(self, root, input_size=224, download=False, **kwargs):
+    def __init__(self, root, input_size=224, download=False, train=True, **kwargs):
         def extract_object(x, df_images, src_dir, dst_dir, threshold=224):
             bbox = np.array(x['bbox'], dtype=int)
             image_id = x['image_id']
@@ -54,51 +54,56 @@ class Coco2014ClassificationDataset(Dataset):
         
         if (download):
             # --- Download COCO 2014 dataset ---
-            subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/train2014.zip'], cwd=root)
-            subprocess.run(['unzip', '-q', 'train2014.zip'], cwd=root)
-            #subprocess.run(['rm', 'train2014.zip'], cwd=root)
+            if (not Path(root, 'train2014.zip').exists()):
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/train2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'train2014.zip'], cwd=root)
 
-            subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/val2014.zip'], cwd=root)
-            subprocess.run(['unzip', '-q', 'val2014.zip'], cwd=root)
-            #subprocess.run(['rm', 'val2014.zip'], cwd=root)
+            if (not Path(root, 'val2014.zip').exists()):
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/val2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'val2014.zip'], cwd=root)
 
-            subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
-            subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
-            #subprocess.run(['rm', 'annotations_trainval2014.zip'], cwd=root)
+            if (not Path(root, 'annotations_trainval2014.zip').exists()):
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
             
             # --- Modify COCO 2014 dataset to classification dataset ---
-            with open(f'{root}/annotations/instances_train2014.json', 'r') as f:
-                instances_train2014 = json.load(f)
-            with open(f'{root}/annotations/instances_val2014.json', 'r') as f:
-                instances_val2014 = json.load(f)
+            if (train):
+                dataset_type = 'train2014'
+                with open(f'{root}/annotations/instances_train2014.json', 'r') as f:
+                    instances = json.load(f)
+            else:
+                dataset_type = 'val2014'
+                with open(f'{root}/annotations/instances_val2014.json', 'r') as f:
+                    instances = json.load(f)
                 
-            df_train2014_images = pd.DataFrame(instances_train2014['images'])
-            df_train2014_categories = pd.DataFrame(instances_train2014['categories'])
-            df_train2014_annotations = pd.DataFrame(instances_train2014['annotations'])
+            df_images = pd.DataFrame(instances['images'])
+            df_categories = pd.DataFrame(instances['categories'])
+            df_annotations = pd.DataFrame(instances['annotations'])
             
-            src_dir = f'{root}/train2014'
-            dst_dir = f'{root}/train2014_clf'
+            n_extract_samples = min(100000, len(df_annotations))
+            src_dir = f'{root}/{dataset_type}'
+            dst_dir = f'{root}/{dataset_type}_clf'
             os.makedirs(dst_dir, exist_ok=True)
-            df_new = pd.DataFrame()
-            df_new[['input_file', 'target', 'flg_threshold']] = df_train2014_annotations[:100000].progress_apply(extract_object, df_images=df_train2014_images, src_dir=src_dir, dst_dir=dst_dir, axis=1)
-            df_train = df_new[df_new['flg_threshold']==True].reset_index(drop=True)
-            df_train[['supercategory', 'category_name']] = df_train.progress_apply(get_category_name, df_category=df_train2014_categories, axis=1)
+            df_dataset = pd.DataFrame()
+            df_dataset[['input_file', 'target', 'flg_threshold']] = df_annotations[:n_extract_samples].progress_apply(extract_object, df_images=df_images, src_dir=src_dir, dst_dir=dst_dir, axis=1)
+            df_dataset = df_dataset[df_dataset['flg_threshold']==True].reset_index(drop=True)
+            df_dataset[['supercategory', 'category_name']] = df_dataset.progress_apply(get_category_name, df_category=df_categories, axis=1)
     
-        self.df_train = df_train
-        self.df_train['input_file'] = self.df_train['input_file'].progress_apply(lambda x: os.path.join(root, x))
+        self.df_dataset = df_dataset
+        self.df_dataset['input_file'] = self.df_dataset['input_file'].progress_apply(lambda x: os.path.join(root, x))
         self.input_size = input_size
-        self.len = len(df_train)
+        self.len = len(df_dataset)
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, index):
-        image_path = self.df_train['input_file'].to_list()[index]
+        image_path = self.df_dataset['input_file'].to_list()[index]
         image = Image.open(image_path)
         image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
 
-        category_id = self.df_train['target'].to_list()[index]
-        category_name = self.df_train['category_name'].to_list()[index]
+        category_id = self.df_dataset['target'].to_list()[index]
+        category_name = self.df_dataset['category_name'].to_list()[index]
 
         return image, category_id, category_name
     

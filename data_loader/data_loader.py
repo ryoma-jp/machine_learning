@@ -131,12 +131,12 @@ class _DataLoaderCoco2014ClassificationPyTorch():
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                 shuffle=shuffle_trainloader, num_workers=2)
 
-#        testset = torchvision.datasets.CIFAR10(root=dataset_dir, train=False,
-#                                            download=True, transform=transform)
-#        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-#                                                shuffle=shuffle_testloader, num_workers=2)
-#
-#        self.classe_name = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+        testset = Coco2014ClassificationDataset(root=dataset_dir, train=False,
+                                            download=True, transform=transform)
+        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                shuffle=shuffle_testloader, num_workers=2)
+
+        self.class_name = trainset.df_dataset['category_name'].unique().tolist()
     
     def inverse_normalize(self, img):
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
