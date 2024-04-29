@@ -79,8 +79,8 @@ class Coco2014ClassificationDataset(Dataset):
             df_categories = pd.DataFrame(instances['categories'])
             df_annotations = pd.DataFrame(instances['annotations'])
             
-            #n_extract_samples = min(100000, len(df_annotations))
-            n_extract_samples = min(1000, len(df_annotations))
+            n_extract_samples = min(300000, len(df_annotations))
+            #n_extract_samples = min(1000, len(df_annotations))
             src_dir = f'{root}/{dataset_type}'
             dst_dir = f'{root}/{dataset_type}_clf'
             os.makedirs(dst_dir, exist_ok=True)
