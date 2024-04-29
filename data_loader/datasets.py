@@ -12,7 +12,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class Coco2014ClassificationDataset(Dataset):
-    def __init__(self, root, input_size=224, download=False, train=True, **kwargs):
+    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
         def extract_object(x, df_images, src_dir, dst_dir, threshold=224):
             bbox = np.array(x['bbox'], dtype=int)
             image_id = x['image_id']
@@ -48,7 +48,6 @@ class Coco2014ClassificationDataset(Dataset):
 
             return pd.Series([supercategory, category_name])
         
-        print(kwargs)
         tqdm.pandas()
         super().__init__()
         
@@ -80,7 +79,8 @@ class Coco2014ClassificationDataset(Dataset):
             df_categories = pd.DataFrame(instances['categories'])
             df_annotations = pd.DataFrame(instances['annotations'])
             
-            n_extract_samples = min(100000, len(df_annotations))
+            #n_extract_samples = min(100000, len(df_annotations))
+            n_extract_samples = min(1000, len(df_annotations))
             src_dir = f'{root}/{dataset_type}'
             dst_dir = f'{root}/{dataset_type}_clf'
             os.makedirs(dst_dir, exist_ok=True)
@@ -90,9 +90,11 @@ class Coco2014ClassificationDataset(Dataset):
             df_dataset[['supercategory', 'category_name']] = df_dataset.progress_apply(get_category_name, df_category=df_categories, axis=1)
     
         self.df_dataset = df_dataset
-        self.df_dataset['input_file'] = self.df_dataset['input_file'].progress_apply(lambda x: os.path.join(root, x))
+        self.df_dataset['input_file'] = self.df_dataset['input_file'].progress_apply(lambda x: os.path.join(dst_dir, x))
         self.input_size = input_size
         self.len = len(df_dataset)
+        self.transform = transform
+        self.dict_target = {target: i for i, target in enumerate(self.df_dataset['target'].unique())}
 
     def __len__(self):
         return self.len
@@ -101,9 +103,14 @@ class Coco2014ClassificationDataset(Dataset):
         image_path = self.df_dataset['input_file'].to_list()[index]
         image = Image.open(image_path)
         image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = np.array(image, dtype=np.float32)
+        
+        if (self.transform is not None):
+            image = self.transform(image)
 
         category_id = self.df_dataset['target'].to_list()[index]
         category_name = self.df_dataset['category_name'].to_list()[index]
 
-        return image, category_id, category_name
+        #return image, self.dict_target[category_id], category_name
+        return image, self.dict_target[category_id]
     
