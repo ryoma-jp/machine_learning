@@ -142,23 +142,28 @@ class VGG16():
         
     def train(self, trainloader, epochs=10, lr=0.0001, wd=0.01, output_dir=None) -> None:
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+        #optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+        optimizer = optim.SGD(self.net.parameters(), lr=lr, weight_decay=wd)
         
         # --- Caluculate first loss ---
+        period = len(trainloader)//1000
         running_loss = 0.0
-        for data in trainloader:
+        for step, data in enumerate(trainloader):
             inputs, labels = data
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             outputs = self.net(inputs)
             loss = criterion(outputs, labels)
             running_loss += loss.item()
+            
+            if (step % period == 0):
+                print(f'[EPOCH #0, step #{step}] loss: {running_loss/(step+1)}')
         print(f'[EPOCH #0] loss: {running_loss/len(trainloader)}')
         
         # --- Training loop ---
         train_start = time.time()
         for epoch in range(epochs):
             running_loss = 0.0
-            for data in trainloader:
+            for step, data in enumerate(trainloader):
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 
@@ -170,6 +175,9 @@ class VGG16():
                 optimizer.step()
                 
                 running_loss += loss.item()
+                
+                if (step % period == 0):
+                    print(f'[EPOCH #{epoch+1}, step #{step}] loss: {running_loss/(step+1)}')
             print(f'[EPOCH #{epoch+1}, elapsed time: {time.time()-train_start:.3f}[sec]] loss: {running_loss/len(trainloader)}')
             
         # --- Save model ---

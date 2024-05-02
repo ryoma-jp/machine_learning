@@ -1,5 +1,6 @@
 
 import os
+import sys
 import subprocess
 import json
 import pandas as pd
@@ -54,14 +55,18 @@ class Coco2014ClassificationDataset(Dataset):
         if (download):
             # --- Download COCO 2014 dataset ---
             if (not Path(root, 'train2014.zip').exists()):
+                print('Downloading and extracting COCO 2014 dataset')
+                print('  * train2014.zip')
                 subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/train2014.zip'], cwd=root)
                 subprocess.run(['unzip', '-q', 'train2014.zip'], cwd=root)
 
             if (not Path(root, 'val2014.zip').exists()):
+                print('  * val2014.zip')
                 subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/val2014.zip'], cwd=root)
                 subprocess.run(['unzip', '-q', 'val2014.zip'], cwd=root)
 
             if (not Path(root, 'annotations_trainval2014.zip').exists()):
+                print('  * annotations_trainval2014.zip')
                 subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
                 subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
             
@@ -89,12 +94,76 @@ class Coco2014ClassificationDataset(Dataset):
             df_dataset = df_dataset[df_dataset['flg_threshold']==True].reset_index(drop=True)
             df_dataset[['supercategory', 'category_name']] = df_dataset.progress_apply(get_category_name, df_category=df_categories, axis=1)
     
-        self.df_dataset = df_dataset
-        self.df_dataset['input_file'] = self.df_dataset['input_file'].progress_apply(lambda x: os.path.join(dst_dir, x))
-        self.input_size = input_size
-        self.len = len(df_dataset)
-        self.transform = transform
-        self.dict_target = {target: i for i, target in enumerate(self.df_dataset['target'].unique())}
+            self.df_dataset = df_dataset
+            self.df_dataset['input_file'] = self.df_dataset['input_file'].progress_apply(lambda x: os.path.join(dst_dir, x))
+            self.input_size = input_size
+            self.len = len(df_dataset)
+            self.transform = transform
+            self.dict_target = {target: i for i, target in enumerate(self.df_dataset['target'].unique())}
+        else:
+            # --- Load from root directory ---
+            pass
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, index):
+        image_path = self.df_dataset['input_file'].to_list()[index]
+        image = Image.open(image_path)
+        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = np.array(image, dtype=np.float32)
+        
+        if (self.transform is not None):
+            image = self.transform(image)
+
+        category_id = (self.df_dataset['target']-1).to_list()[index]
+        category_name = self.df_dataset['category_name'].to_list()[index]
+
+        #return image, self.dict_target[category_id], category_name
+        #return image, self.dict_target[category_id]
+        return image, category_id
+
+class Coco2014Dataset(Dataset):
+    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+        tqdm.pandas()
+        super().__init__()
+        
+        if (download):
+            # --- Download COCO 2014 dataset ---
+            if (not Path(root, 'train2014.zip').exists()):
+                print('Downloading and extracting COCO 2014 dataset')
+                print('  * train2014.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/train2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'train2014.zip'], cwd=root)
+
+            if (not Path(root, 'val2014.zip').exists()):
+                print('  * val2014.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/val2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'val2014.zip'], cwd=root)
+
+            if (not Path(root, 'annotations_trainval2014.zip').exists()):
+                print('  * annotations_trainval2014.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
+            
+            # --- Modify COCO 2014 dataset to classification dataset ---
+            if (train):
+                dataset_type = 'train2014'
+                with open(f'{root}/annotations/instances_train2014.json', 'r') as f:
+                    instances = json.load(f)
+            else:
+                dataset_type = 'val2014'
+                with open(f'{root}/annotations/instances_val2014.json', 'r') as f:
+                    instances = json.load(f)
+                
+            df_images = pd.DataFrame(instances['images'])
+            df_categories = pd.DataFrame(instances['categories'])
+            df_annotations = pd.DataFrame(instances['annotations'])
+            
+            n_extract_samples = min(300000, len(df_annotations))
+        else:
+            # --- Load from root directory ---
+            pass
 
     def __len__(self):
         return self.len
@@ -112,5 +181,6 @@ class Coco2014ClassificationDataset(Dataset):
         category_name = self.df_dataset['category_name'].to_list()[index]
 
         #return image, self.dict_target[category_id], category_name
-        return image, self.dict_target[category_id]
+        #return image, self.dict_target[category_id]
+        return image, category_id
     
