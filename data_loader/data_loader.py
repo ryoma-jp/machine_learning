@@ -129,12 +129,12 @@ class _DataLoaderCoco2014ClassificationPyTorch():
         trainset = Coco2014ClassificationDataset(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader, num_workers=2)
+                                                shuffle=shuffle_trainloader, num_workers=8)
 
         testset = Coco2014ClassificationDataset(root=dataset_dir, train=False,
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader, num_workers=2)
+                                                shuffle=shuffle_testloader, num_workers=8)
 
         self.class_name = trainset.df_dataset['category_name'].unique().tolist()
     

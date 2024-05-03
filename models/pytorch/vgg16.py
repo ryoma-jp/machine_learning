@@ -190,6 +190,7 @@ class VGG16():
     def predict(self, testloader) -> Tuple[np.ndarray, np.ndarray]:
         predictions = []
         labels = []
+        self.net.eval()
         with torch.no_grad():
             for data in testloader:
                 inputs, labels_ = data
