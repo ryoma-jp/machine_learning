@@ -146,7 +146,7 @@ class VGG16():
         optimizer = optim.SGD(self.net.parameters(), lr=lr, weight_decay=wd)
         
         # --- Caluculate first loss ---
-        period = len(trainloader)//1000
+        period = max(1, len(trainloader)//1000)
         running_loss = 0.0
         for step, data in enumerate(trainloader):
             inputs, labels = data

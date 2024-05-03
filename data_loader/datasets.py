@@ -88,7 +88,6 @@ class Coco2014ClassificationDataset(Dataset):
             df_annotations = pd.DataFrame(instances['annotations'])
             
             n_extract_samples = min(300000, len(df_annotations))
-            #n_extract_samples = min(1000, len(df_annotations))
             src_dir = f'{root}/{dataset_type}'
             dst_dir = f'{root}/{dataset_type}_clf'
             os.makedirs(dst_dir, exist_ok=True)
@@ -98,8 +97,8 @@ class Coco2014ClassificationDataset(Dataset):
             df_dataset[['supercategory', 'category_name']] = df_dataset.progress_apply(get_category_name, df_category=df_categories, axis=1)
 
             # --- make the number of each category to be the same ---
-            n_samples_category = df_dataset['target'].value_counts().min()
-            df_dataset = df_dataset.groupby('target').apply(lambda x: x.sample(n=n_samples_category)).reset_index(drop=True)
+            n_samples_category = max(1000, df_dataset['target'].value_counts().min())
+            df_dataset = df_dataset.groupby('target').progress_apply(lambda x: x.sample(n=n_samples_category, replace=True)).reset_index(drop=True)
             
             # --- save parameters ---
             self.df_dataset = df_dataset
