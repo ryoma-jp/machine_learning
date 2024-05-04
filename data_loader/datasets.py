@@ -127,7 +127,7 @@ class Coco2014ClassificationDataset(Dataset):
         if (self.transform is not None):
             image = self.transform(image)
 
-        category_id = (self.df_dataset['target']-1).to_list()[index]
+        category_id = self.df_dataset['target'].to_list()[index]
         category_name = self.df_dataset['category_name'].to_list()[index]
 
         #return image, category_id, category_name   # T.B.D
