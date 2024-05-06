@@ -36,6 +36,54 @@ class _DataLoaderCifar10PyTorch():
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
         return transform(img)
     
+class _DataLoaderCifar100PyTorch():
+    '''Data Loader for CIFAR-100 dataset for PyTorch
+    This class provides to load CIFAR-100 dataset for PyTorch.
+    '''
+    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+        transform = transforms.Compose([
+            transforms.Resize(resize),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        
+        trainset = torchvision.datasets.CIFAR100(root=dataset_dir, train=True,
+                                                download=True, transform=transform)
+        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                shuffle=shuffle_trainloader, num_workers=2)
+
+        testset = torchvision.datasets.CIFAR100(root=dataset_dir, train=False,
+                                            download=True, transform=transform)
+        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                shuffle=shuffle_testloader, num_workers=2)
+
+        self.classe_name = (
+            'beaver', 'dolphin', 'otter', 'seal', 'whale',
+            'aquarium fish', 'flatfish', 'ray', 'shark', 'trout',
+            'orchids', 'poppies', 'roses', 'sunflowers', 'tulips',
+            'bottles', 'bowls', 'cans', 'cups', 'plates',
+            'apples', 'mushrooms', 'oranges', 'pears', 'sweet peppers',
+            'clock', 'computer keyboard', 'lamp', 'telephone', 'television',
+            'bed', 'chair', 'couch', 'table', 'wardrobe',
+            'bee', 'beetle', 'butterfly', 'caterpillar', 'cockroach',
+            'bear', 'leopard', 'lion', 'tiger', 'wolf',
+            'bridge', 'castle', 'house', 'road', 'skyscraper',
+            'cloud', 'forest', 'mountain', 'plain', 'sea',
+            'camel', 'cattle', 'chimpanzee', 'elephant', 'kangaroo',
+            'fox', 'porcupine', 'possum', 'raccoon', 'skunk',
+            'crab', 'lobster', 'snail', 'spider', 'worm',
+            'baby', 'boy', 'girl', 'man', 'woman',
+            'crocodile', 'dinosaur', 'lizard', 'snake', 'turtle',
+            'hamster', 'mouse', 'rabbit', 'shrew', 'squirrel',
+            'maple', 'oak', 'palm', 'pine', 'willow',
+            'bicycle', 'bus', 'motorcycle', 'pickup truck', 'train',
+            'lawn-mower', 'rocket', 'streetcar', 'tank', 'tractor',
+        )
+    
+    def inverse_normalize(self, img):
+        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
+        return transform(img)
+    
 class _DataLoaderFood101PyTorch():
     '''Data Loader for ObjectNet dataset for PyTorch
     This class provides to load ObjectNet dataset for PyTorch.
@@ -147,18 +195,21 @@ class DataLoader():
     Base class for data loaders. All data loaders should inherit from this class.
     This class privides to load below datasets:
         - cifar10_pytorch (CIFAR-10 dataset for PyTorch)
+        - cifar100_pytorch (CIFAR-100 dataset for PyTorch)
         - food101_pytorch (Food-101 dataset for PyTorch)
         - coco2014_classification_pytorch (COCO2014 classification dataset(modified from original) for PyTorch)
     '''
     DATASET_NAMES = ['cifar10_pytorch']
     DEFAULT_SIZE = {
         'cifar10_pytorch': (32, 32),
+        'cifar100_pytorch': (32, 32),
         'food101_pytorch': (128, 128),
         'officehome_pytorch': (227, 227),
         'coco2014_classification_pytorch': (224, 224),
     }
     FUNCTION_TABLE = {
         'cifar10_pytorch': _DataLoaderCifar10PyTorch,
+        'cifar100_pytorch': _DataLoaderCifar100PyTorch,
         'food101_pytorch': _DataLoaderFood101PyTorch,
         'officehome_pytorch': _DataLoaderOfficeHomePyTorch,
         'coco2014_classification_pytorch': _DataLoaderCoco2014ClassificationPyTorch,
