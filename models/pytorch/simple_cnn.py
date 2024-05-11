@@ -70,7 +70,7 @@ class Net(nn.Module):
     
 
 class SimpleCNN():
-    def __init__(self, device, input_size, num_classes) -> None:
+    def __init__(self, device, input_size, num_classes, pth_path=None) -> None:
         '''Initialize SimpleCNN
         
         Args:
@@ -81,6 +81,22 @@ class SimpleCNN():
         self.device = device
         net_input_size = input_size[1:]
         self.net = Net(net_input_size, num_classes)
+        
+        if (pth_path is None):
+            for m in self.net.modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.BatchNorm2d):
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.Linear):
+                    nn.init.normal_(m.weight, 0, 0.01)
+                    nn.init.constant_(m.bias, 0)
+        else:
+            self.net.load_state_dict(torch.load(pth_path))
+            
         self.net.to(self.device)
         print(summary(self.net, input_size=input_size))
         
@@ -137,6 +153,7 @@ class SimpleCNN():
             for data in testloader:
                 inputs, labels_ = data
                 inputs, labels_ = inputs.to(self.device), labels_.to(self.device)
+                self.net.eval()
                 outputs = self.net(inputs)
                 _, prediction = torch.max(outputs, 1)
                 predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
