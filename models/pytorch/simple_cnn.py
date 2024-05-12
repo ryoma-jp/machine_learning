@@ -100,9 +100,42 @@ class SimpleCNN():
         self.net.to(self.device)
         print(summary(self.net, input_size=input_size))
         
-    def train(self, trainloader, epochs=10, lr=0.0001, wd=0.01, output_dir=None) -> None:
+    def train(self, trainloader, epochs=10, optim_params=None, output_dir=None) -> None:
+        """Train the model
+        
+        Args:
+            trainloader (torch.utils.data.DataLoader): DataLoader for training
+            epochs (int): Number of epochs
+            optim_params (dict): Optimizer parameters
+                - optim_params['optim'] (str): Optimizer name ['adamw', 'sgd', 'momentum']
+                    - adamw: AdamW optimizer
+                        - lr: Learning rate
+                        - wd: Weight decay
+                    - sgd: SGD optimizer
+                        - lr: Learning rate
+                    - momentum: SGD with momentum optimizer
+                        - lr: Learning rate
+                        - momentum: Momentum
+            output_dir (str): Output directory to save the model
+        """
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+        
+        if (optim_params is None):
+            optimizer = optim.AdamW(self.net.parameters())
+        else:
+            if (optim_params['optim'] == 'adamw'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                wd = optim_params['wd'] if ('wd' in optim_params) else 0.01
+                optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+            elif (optim_params['optim'] == 'sgd'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                optimizer = optim.SGD(self.net.parameters(), lr=lr)
+            elif (optim_params['optim'] == 'momentum'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                momentum = optim_params['momentum'] if ('momentum' in optim_params) else 0.9
+                optimizer = optim.SGD(self.net.parameters(), lr=lr, momentum=momentum)
+            else:
+                optimizer = optim.AdamW(self.net.parameters())
         
         # --- Caluculate first loss ---
         running_loss = 0.0
