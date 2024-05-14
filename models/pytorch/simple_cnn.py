@@ -107,7 +107,7 @@ class SimpleCNN():
             trainloader (torch.utils.data.DataLoader): DataLoader for training
             epochs (int): Number of epochs
             optim_params (dict): Optimizer parameters
-                - optim_params['optim'] (str): Optimizer name ['adamw', 'sgd', 'momentum']
+                - optim_params['optim'] (str): Optimizer name ['adamw', 'sgd', 'momentum', 'adagrad']
                     - adamw: AdamW optimizer
                         - lr: Learning rate
                         - wd: Weight decay
@@ -116,6 +116,10 @@ class SimpleCNN():
                     - momentum: SGD with momentum optimizer
                         - lr: Learning rate
                         - momentum: Momentum
+                    - adagrad: Adagrad optimizer
+                        - lr: Learning rate
+                        - lr_decay: Learning rate decay
+                        - wd: Weight decay
             output_dir (str): Output directory to save the model
         """
         criterion = nn.CrossEntropyLoss()
@@ -134,6 +138,11 @@ class SimpleCNN():
                 lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
                 momentum = optim_params['momentum'] if ('momentum' in optim_params) else 0.9
                 optimizer = optim.SGD(self.net.parameters(), lr=lr, momentum=momentum)
+            elif (optim_params['optim'] == 'adagrad'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                lr_decay = optim_params['lr_decay'] if ('lr_decay' in optim_params) else 0.0
+                wd = optim_params['wd'] if ('wd' in optim_params) else 0.0
+                optimizer = optim.Adagrad(self.net.parameters(), lr=lr, lr_decay=lr_decay, weight_decay=wd)
             else:
                 optimizer = optim.AdamW(self.net.parameters())
         
