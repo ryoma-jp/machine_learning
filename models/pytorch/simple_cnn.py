@@ -129,8 +129,10 @@ class SimpleCNN():
         else:
             if (optim_params['optim'] == 'adamw'):
                 lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                beta1 = optim_params['beta1'] if ('beta1' in optim_params) else 0.9
+                beta2 = optim_params['beta2'] if ('beta2' in optim_params) else 0.999
                 wd = optim_params['wd'] if ('wd' in optim_params) else 0.01
-                optimizer = optim.AdamW(self.net.parameters(), lr=lr, weight_decay=wd)
+                optimizer = optim.AdamW(self.net.parameters(), lr=lr, betas=(beta1, beta2), weight_decay=wd)
             elif (optim_params['optim'] == 'sgd'):
                 lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
                 optimizer = optim.SGD(self.net.parameters(), lr=lr)
@@ -143,6 +145,20 @@ class SimpleCNN():
                 lr_decay = optim_params['lr_decay'] if ('lr_decay' in optim_params) else 0.0
                 wd = optim_params['wd'] if ('wd' in optim_params) else 0.0
                 optimizer = optim.Adagrad(self.net.parameters(), lr=lr, lr_decay=lr_decay, weight_decay=wd)
+            elif (optim_params['optim'] == 'rmsprop'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.01
+                alpha = optim_params['alpha'] if ('alpha' in optim_params) else 0.99
+                optimizer = optim.RMSprop(self.net.parameters(), lr=lr, alpha=alpha)
+            elif (optim_params['optim'] == 'adadelta'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 1.0
+                rho = optim_params['rho'] if ('rho' in optim_params) else 0.9
+                optimizer = optim.Adadelta(self.net.parameters(), lr=lr, rho=rho)
+            elif (optim_params['optim'] == 'adam'):
+                lr = optim_params['lr'] if ('lr' in optim_params) else 0.001
+                beta1 = optim_params['beta1'] if ('beta1' in optim_params) else 0.9
+                beta2 = optim_params['beta2'] if ('beta2' in optim_params) else 0.999
+                wd = optim_params['wd'] if ('wd' in optim_params) else 0.01
+                optimizer = optim.Adam(self.net.parameters(), lr=lr, betas=(beta1, beta2), weight_decay=wd)
             else:
                 optimizer = optim.AdamW(self.net.parameters())
         
