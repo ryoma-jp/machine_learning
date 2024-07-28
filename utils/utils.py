@@ -5,6 +5,17 @@ import zipfile
 from pathlib import Path
 
 class SinglePassVarianceComputation():
+    """
+    This class is used to compute the variance of a given dataset in a single pass.
+
+    Attributes:
+    M: The mean of the dataset.
+    S: The sum of the squared differences between each element in the dataset and the mean.
+    N: The number of elements in the dataset.
+
+    Methods:
+    __call__(batch): Updates the mean, variance, and number of elements in the dataset for each batch.
+    """
     def __init__(self):
         self.M = 0
         self.S = 0
@@ -56,6 +67,16 @@ class FeatureExtractor():
         return self.features
     
 def extract_tar(tar, path='.'):
+    """
+    Extracts the contents of a tar file to a specified directory. This function prevents path traversal attacks.
+
+    Args:
+    tar: The path to the tar file.
+    path: The path to the directory where the contents of the tar file will be extracted.
+
+    Raises:
+    Exception: If a path traversal attack is detected.
+    """
     with tarfile.open(tar) as tar:
         # --- CVE-2007-4559 start ---
         def is_within_directory(directory, target):
@@ -80,5 +101,12 @@ def extract_tar(tar, path='.'):
         # --- CVE-2007-4559 end ---
 
 def extract_zip(zip, path='.'):
+    """
+    Extracts the contents of a zip file to a specified directory.
+
+    Args:
+    zip: The path to the zip file.
+    path: The path to the directory where the contents of the zip file will be extracted.
+    """
     with zipfile.ZipFile(zip, 'r') as zip_ref:
         zip_ref.extractall(path)

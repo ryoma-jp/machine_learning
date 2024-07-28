@@ -13,6 +13,21 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class Coco2014ClassificationDataset(Dataset):
+    """
+    This class is used to create a classification dataset from the COCO 2014 dataset.
+    
+    Attributes:
+    root: The root directory where the COCO 2014 dataset is stored.
+    input_size: The size of the input images.
+    download: A boolean that indicates whether to download the COCO 2014 dataset.
+    train: A boolean that indicates whether to use the training or validation dataset.
+    transform: A list of preprocessing transformations to apply to the input images.
+    
+    Methods:
+    __init__(root, input_size, download, train, transform): Initializes the dataset.
+    __len__(): Returns the number of samples in the dataset.
+    __getitem__(index): Returns a sample from the dataset at the specified index.
+    """
     def __init__(self, root, input_size=224, download=False, train=True, transform=None):
         def extract_object(x, df_images, src_dir, dst_dir, threshold=224):
             bbox = np.array(x['bbox'], dtype=int)
@@ -134,6 +149,21 @@ class Coco2014ClassificationDataset(Dataset):
         return image, category_id
 
 class Coco2014Dataset(Dataset):
+    """
+    This class is used to create a classification dataset from the COCO 2014 dataset.
+    
+    Attributes:
+    root: The root directory where the COCO 2014 dataset is stored.
+    input_size: The size of the input images.
+    download: A boolean that indicates whether to download the COCO 2014 dataset.
+    train: A boolean that indicates whether to use the training or validation dataset.
+    transform: A list of preprocessing transformations to apply to the input images.
+    
+    Methods:
+    __init__(root, input_size, download, train, transform): Initializes the dataset.
+    __len__(): Returns the number of samples in the dataset.
+    __getitem__(index): Returns a sample from the dataset at the specified index.
+    """
     def __init__(self, root, input_size=224, download=False, train=True, transform=None):
         tqdm.pandas()
         super().__init__()

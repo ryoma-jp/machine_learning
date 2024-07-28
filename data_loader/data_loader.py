@@ -10,9 +10,10 @@ import torchvision
 import torchvision.transforms as transforms
 
 class _DataLoaderCifar10PyTorch():
-    '''Data Loader for CIFAR-10 dataset for PyTorch
+    """
+    Data Loader for CIFAR-10 dataset for PyTorch
     This class provides to load CIFAR-10 dataset for PyTorch.
-    '''
+    """
     def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.Resize(resize),
@@ -37,9 +38,10 @@ class _DataLoaderCifar10PyTorch():
         return transform(img)
     
 class _DataLoaderCifar100PyTorch():
-    '''Data Loader for CIFAR-100 dataset for PyTorch
+    """
+    Data Loader for CIFAR-100 dataset for PyTorch
     This class provides to load CIFAR-100 dataset for PyTorch.
-    '''
+    """
     def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.Resize(resize),
@@ -85,9 +87,10 @@ class _DataLoaderCifar100PyTorch():
         return transform(img)
     
 class _DataLoaderFood101PyTorch():
-    '''Data Loader for ObjectNet dataset for PyTorch
-    This class provides to load ObjectNet dataset for PyTorch.
-    '''
+    """
+    Data Loader for Food-101 dataset for PyTorch
+    This class provides to load Food-101 dataset for PyTorch.
+    """
     def __init__(self, resize=(128, 128), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.Resize(resize),
@@ -142,9 +145,10 @@ class _DataLoaderFood101PyTorch():
         return transform(img)
     
 class _DataLoaderOfficeHomePyTorch():
-    '''Data Loader for ObjectNet dataset for PyTorch
-    This class provides to load ObjectNet dataset for PyTorch.
-    '''
+    """
+    Data Loader for OfficeHome dataset for PyTorch
+    This class provides to load OfficeHome dataset for PyTorch.
+    """
     def __init__(self, resize=(227, 227), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         # --- Extract dataset ---
         filename = 'OfficeHomeDataset_10072016.zip'
@@ -165,9 +169,10 @@ class _DataLoaderOfficeHomePyTorch():
         self.class_name = train_images.classes
         
 class _DataLoaderCoco2014ClassificationPyTorch():
-    '''Data Loader for COCO2014 Classification dataset for PyTorch
-    This class provides to load COCO2014 classification dataset modified from the original for PyTorch.
-    '''
+    """
+    Data Loader for COCO2014 classification dataset for PyTorch
+    This class provides to load COCO2014 classification dataset for PyTorch.
+    """
     def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -191,14 +196,18 @@ class _DataLoaderCoco2014ClassificationPyTorch():
         return transform(img)
 
 class DataLoader():
-    '''Data Loader
-    Base class for data loaders. All data loaders should inherit from this class.
-    This class privides to load below datasets:
-        - cifar10_pytorch (CIFAR-10 dataset for PyTorch)
-        - cifar100_pytorch (CIFAR-100 dataset for PyTorch)
-        - food101_pytorch (Food-101 dataset for PyTorch)
-        - coco2014_classification_pytorch (COCO2014 classification dataset(modified from original) for PyTorch)
-    '''
+    """
+    Data Loader for PyTorch
+    This class provides to load datasets for PyTorch.
+    
+    Attributes:
+    DATASET_NAMES: List of dataset names.
+    DEFAULT_SIZE: Dictionary of default size for each dataset.
+    FUNCTION_TABLE: Dictionary of functions to load each dataset.
+    
+    Methods:
+    __init__(dataset_name, resize, dataset_dir, batch_size): Initialize the class.
+    """
     DATASET_NAMES = ['cifar10_pytorch']
     DEFAULT_SIZE = {
         'cifar10_pytorch': (32, 32),
