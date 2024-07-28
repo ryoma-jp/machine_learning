@@ -50,6 +50,7 @@ class FeatureExtractor():
         self.hook.remove()
 
     def __call__(self, x):
+        self.features = []
         self.model.eval()
         self.model(x)
         return self.features
