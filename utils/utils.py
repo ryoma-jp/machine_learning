@@ -22,6 +22,38 @@ class SinglePassVarianceComputation():
         var = self.S / (self.N-1)
         return mean, var
 
+class FeatureExtractor():
+    """
+    This class is used to extract features from a specific layer of a given model.
+
+    Attributes:
+    model: The model from which the features will be extracted.
+    layer: The specific layer of the model from which the features will be extracted.
+    features: A list that will hold the extracted features.
+    hook: A hook that is registered to the specified layer of the model. The hook will call the hook_fn method every time the layer is invoked.
+
+    Methods:
+    hook_fn(output): Appends the output of the layer to the features list.
+    remove(): Removes the hook from the layer.
+    __call__(x): Passes the input x through the model and returns the features list.
+    """
+    def __init__(self, model, layer):
+        def hook_fn(module, input, output):
+            self.features.append(output)
+        
+        self.model = model
+        self.layer = layer
+        self.features = []
+        self.hook = self.layer.register_forward_hook(hook_fn)
+
+    def remove(self):
+        self.hook.remove()
+
+    def __call__(self, x):
+        self.model.eval()
+        self.model(x)
+        return self.features
+    
 def extract_tar(tar, path='.'):
     with tarfile.open(tar) as tar:
         # --- CVE-2007-4559 start ---
