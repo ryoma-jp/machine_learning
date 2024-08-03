@@ -12,6 +12,10 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
 
+# import modules for COCO dataset
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
+
 class Coco2014ClassificationDataset(Dataset):
     """
     This class is used to create a classification dataset from the COCO 2014 dataset.
@@ -150,7 +154,7 @@ class Coco2014ClassificationDataset(Dataset):
 
 class Coco2014Dataset(Dataset):
     """
-    This class is used to create a classification dataset from the COCO 2014 dataset.
+    This class is used to create Dataset class for COCO 2014 dataset.
     
     Attributes:
     root: The root directory where the COCO 2014 dataset is stored.
@@ -165,10 +169,18 @@ class Coco2014Dataset(Dataset):
     __getitem__(index): Returns a sample from the dataset at the specified index.
     """
     def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+        def _get_category_name(x, df_categories):
+            category_name = df_categories[df_categories['id']==x['category_id']].iloc[0]['name']
+            supercategory = df_categories[df_categories['id']==x['category_id']].iloc[0]['supercategory']
+            return pd.Series({'supercategory': supercategory, 'category_name': category_name})
+        
         tqdm.pandas()
         super().__init__()
         
         if (download):
+            # --- Create root directory ---
+            Path(root).mkdir(parents=True, exist_ok=True)
+            
             # --- Download COCO 2014 dataset ---
             if (not Path(root, 'train2014.zip').exists()):
                 print('Downloading and extracting COCO 2014 dataset')
@@ -186,24 +198,57 @@ class Coco2014Dataset(Dataset):
                 subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
                 subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
             
-            # --- Modify COCO 2014 dataset to classification dataset ---
-            if (train):
-                dataset_type = 'train2014'
-                with open(f'{root}/annotations/instances_train2014.json', 'r') as f:
-                    instances = json.load(f)
-            else:
-                dataset_type = 'val2014'
-                with open(f'{root}/annotations/instances_val2014.json', 'r') as f:
-                    instances = json.load(f)
-                
-            df_images = pd.DataFrame(instances['images'])
-            df_categories = pd.DataFrame(instances['categories'])
-            df_annotations = pd.DataFrame(instances['annotations'])
+            if (not Path(root, 'instances_val2014_fakebbox100_results.json').exists()):
+                print('  * instances_val2014_fakebbox100_results.json')
+                subprocess.run(['wget', '-q', 'https://raw.githubusercontent.com/cocodataset/cocoapi/master/results/instances_val2014_fakebbox100_results.json'], cwd=root)
             
-            n_extract_samples = min(300000, len(df_annotations))
         else:
             # --- Load from root directory ---
             pass
+        # --- Load COCO Annotations ---
+        if (train):
+            dataset_type = 'train2014'
+            ann_file = f'{root}/annotations/instances_train2014.json'
+        else:
+            dataset_type = 'val2014'
+            ann_file = f'{root}/annotations/instances_val2014.json'
+        annotations = COCO(ann_file)
+        
+        res_file = f'{root}/instances_val2014_fakebbox100_results.json'
+        results = annotations.loadRes(res_file)
+#        imgIds = sorted(annotations.getImgIds())
+        imgIds = sorted(annotations.getImgIds())[:100]
+        
+        cocoEval = COCOeval(annotations, results, 'bbox')
+        cocoEval.params.imgIds = imgIds
+        cocoEval.evaluate()
+        cocoEval.accumulate()
+        cocoEval.summarize()
+        
+        # --- Load COCO Images Path ---
+        print('[INFO] Load COCO Images Path')
+        df_images = pd.DataFrame(annotations.loadImgs(imgIds))
+        df_images['file_name'] = df_images['file_name'].progress_apply(lambda x: os.path.join(root, dataset_type, x))
+        
+        # --- Load COCO Categories ---
+        print('[INFO] Load COCO Categories')
+        df_categories = pd.DataFrame(annotations.loadCats(annotations.getCatIds()))
+        
+        # --- Load COCO Annotations ---
+        print('[INFO] Load COCO Annotations')
+        df_annotations = pd.DataFrame(annotations.loadAnns(annotations.getAnnIds(imgIds=imgIds)))
+        print(df_annotations.head())
+        print(df_categories.head())
+        df_annotations[['supercategory', 'category_name']] = df_annotations.progress_apply(lambda x: _get_category_name(x, df_categories), axis=1)
+        
+        self.df_dataset = df_annotations
+        self.df_dataset['input_file'] = self.df_dataset['image_id'].progress_apply(lambda x: df_images[df_images['id']==x]['file_name'].iloc[0])
+        self.df_dataset['category_name'] = self.df_dataset['category_name'].astype('category')
+        self.len = len(self.df_dataset)
+        self.transform = transform
+        
+        print(self.df_dataset.head())
+        print(self.df_dataset.columns)
 
     def __len__(self):
         return self.len
@@ -217,8 +262,7 @@ class Coco2014Dataset(Dataset):
         if (self.transform is not None):
             image = self.transform(image)
 
-        category_id = self.df_dataset['target'].to_list()[index]
-        category_name = self.df_dataset['category_name'].to_list()[index]
+        attr = self.df_dataset['category_name'].iloc[index]
 
-        return image, category_id
+        return image, attr
     
