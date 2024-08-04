@@ -20,39 +20,45 @@ def load_datasets():
     dataset_dir = './dataset'
     dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir)
     
-    batch = next(iter(dataloader.dataset.testloader))
-    print(batch)
-    print(batch[0].shape)
-    
-    # --- save image for debug ---
-    image = Image.fromarray(dataloader.dataset.inverse_normalize(batch[0][0]).numpy().transpose(1, 2, 0).astype('uint8'))
-    print(np.array(image, dtype=np.float32))
-    image.save('test.jpg')
-    
     return dataloader
 
 def load_model(model):
     if (model == 'ssdlite320_mobilenet_v3_large'):
-        model = torchvision.models.detection.ssdlite320_mobilenet_v3_large(weights=torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights.DEFAULT)
+        model = torchvision.models.detection.ssdlite320_mobilenet_v3_large(weights=torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights.COCO_V1)
         
     return model
 
-def predict(model, images):
+def predict(model, dataloader):
+    def _decode_predictions(predictions):
+        boxes = predictions[0]['boxes']
+        labels = predictions[0]['labels']
+        scores = predictions[0]['scores']
+        
+        return boxes, labels, scores
+    
+    batch = next(iter(dataloader.dataset.testloader))
+    batch_images = batch[0]
+    
+    # --- save image for debug ---
+#    image = Image.fromarray(dataloader.dataset.inverse_normalize(batch[0][0]).numpy().transpose(1, 2, 0).astype('uint8'))
+#    print(np.array(image, dtype=np.float32))
+#    image.save('test.jpg')
+    
     model.eval()
-    x = [torch.rand(3, 320, 320), torch.rand(3, 500, 400)]
-    predictions = model(x)
-#    predictions = model(images)
+    predictions = model(batch_images)
+    print(len(predictions))
+    print(predictions[0].keys())
     
     return predictions
 
 def benchmark():
-    load_datasets()
+    dataloader = load_datasets()
     
     models = ['ssdlite320_mobilenet_v3_large']
     
-#    model = load_model(models[0])
-#    predictions = predict(model, None)
-#    print(predictions)
+    model = load_model(models[0])
+    predictions = predict(model, dataloader)
+    #print(predictions)
 
 def main():
     # --- Parse arguments ---
