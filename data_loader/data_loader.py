@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from urllib import request
 from utils.utils import extract_tar, extract_zip
-from data_loader.datasets import Coco2014ClassificationDataset
+from data_loader.datasets import Coco2014ClassificationDataset, Coco2014Dataset
 
 import torch
 import torchvision
@@ -168,6 +168,32 @@ class _DataLoaderOfficeHomePyTorch():
         
         self.class_name = train_images.classes
         
+class _DataLoaderCoco2014PyTorch():
+    """
+    Data Loader for COCO2014 dataset for PyTorch
+    """
+    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        
+        trainset = Coco2014Dataset(root=dataset_dir, train=True,
+                                                download=True, transform=transform)
+        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                shuffle=shuffle_trainloader, num_workers=8)
+
+        testset = Coco2014Dataset(root=dataset_dir, train=False,
+                                            download=True, transform=transform)
+        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                shuffle=shuffle_testloader, num_workers=8)
+
+        self.class_name = trainset.df_annotations['category_name'].unique().tolist()
+    
+    def inverse_normalize(self, img):
+        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
+        return transform(img) * 255.0
+
 class _DataLoaderCoco2014ClassificationPyTorch():
     """
     Data Loader for COCO2014 classification dataset for PyTorch
@@ -215,6 +241,7 @@ class DataLoader():
         'food101_pytorch': (128, 128),
         'officehome_pytorch': (227, 227),
         'coco2014_classification_pytorch': (224, 224),
+        'coco2014_pytorch': (224, 224),
     }
     FUNCTION_TABLE = {
         'cifar10_pytorch': _DataLoaderCifar10PyTorch,
@@ -222,6 +249,7 @@ class DataLoader():
         'food101_pytorch': _DataLoaderFood101PyTorch,
         'officehome_pytorch': _DataLoaderOfficeHomePyTorch,
         'coco2014_classification_pytorch': _DataLoaderCoco2014ClassificationPyTorch,
+        'coco2014_pytorch': _DataLoaderCoco2014PyTorch,
     }
     
     def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32) -> None:

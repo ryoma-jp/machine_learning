@@ -174,6 +174,13 @@ class Coco2014Dataset(Dataset):
             supercategory = df_categories[df_categories['id']==x['category_id']].iloc[0]['supercategory']
             return pd.Series({'supercategory': supercategory, 'category_name': category_name})
         
+        print('[INFO] Coco2014Dataset.__init__')
+        print(f'  * root={root}')
+        print(f'  * input_size={input_size}')
+        print(f'  * download={download}')
+        print(f'  * train={train}')
+        print(f'  * transform={transform}')
+        
         tqdm.pandas()
         super().__init__()
         
@@ -213,17 +220,21 @@ class Coco2014Dataset(Dataset):
             dataset_type = 'val2014'
             ann_file = f'{root}/annotations/instances_val2014.json'
         annotations = COCO(ann_file)
+#        imgIds = annotations.getImgIds()
+        imgIds = annotations.getImgIds()[:100]
         
-        res_file = f'{root}/instances_val2014_fakebbox100_results.json'
-        results = annotations.loadRes(res_file)
-#        imgIds = sorted(annotations.getImgIds())
-        imgIds = sorted(annotations.getImgIds())[:100]
-        
-        cocoEval = COCOeval(annotations, results, 'bbox')
-        cocoEval.params.imgIds = imgIds
-        cocoEval.evaluate()
-        cocoEval.accumulate()
-        cocoEval.summarize()
+        if (not train):
+            res_file = f'{root}/instances_val2014_fakebbox100_results.json'
+            print(f'[INFO] res_file={res_file}')
+            results = annotations.loadRes(res_file)
+#            imgIds = sorted(annotations.getImgIds())
+            imgIds = sorted(annotations.getImgIds())[:100]
+
+            cocoEval = COCOeval(annotations, results, 'bbox')
+            cocoEval.params.imgIds = imgIds
+            cocoEval.evaluate()
+            cocoEval.accumulate()
+            cocoEval.summarize()
         
         # --- Load COCO Images Path ---
         print('[INFO] Load COCO Images Path')
@@ -236,33 +247,34 @@ class Coco2014Dataset(Dataset):
         
         # --- Load COCO Annotations ---
         print('[INFO] Load COCO Annotations')
-        df_annotations = pd.DataFrame(annotations.loadAnns(annotations.getAnnIds(imgIds=imgIds)))
-        print(df_annotations.head())
+        self.df_annotations = pd.DataFrame(annotations.loadAnns(annotations.getAnnIds(imgIds=imgIds)))
+        print(self.df_annotations.head())
         print(df_categories.head())
-        df_annotations[['supercategory', 'category_name']] = df_annotations.progress_apply(lambda x: _get_category_name(x, df_categories), axis=1)
+        self.df_annotations[['supercategory', 'category_name']] = self.df_annotations.progress_apply(lambda x: _get_category_name(x, df_categories), axis=1)
         
-        self.df_dataset = df_annotations
-        self.df_dataset['input_file'] = self.df_dataset['image_id'].progress_apply(lambda x: df_images[df_images['id']==x]['file_name'].iloc[0])
-        self.df_dataset['category_name'] = self.df_dataset['category_name'].astype('category')
-        self.len = len(self.df_dataset)
+        self.df_annotations['input_file'] = self.df_annotations['image_id'].progress_apply(lambda x: df_images[df_images['id']==x]['file_name'].iloc[0])
+        self.df_annotations['category_name'] = self.df_annotations['category_name'].astype('category')
+        self.len = len(self.df_annotations)
         self.transform = transform
         
-        print(self.df_dataset.head())
-        print(self.df_dataset.columns)
+        print(self.df_annotations.head())
+        print(self.df_annotations.columns)
+        
+        self.input_size = input_size
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, index):
-        image_path = self.df_dataset['input_file'].to_list()[index]
+        image_path = self.df_annotations['input_file'].to_list()[index]
         image = Image.open(image_path)
         image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
-        image = np.array(image, dtype=np.float32)
+        image = np.array(image, dtype=np.float32) / 255.0
         
         if (self.transform is not None):
             image = self.transform(image)
 
-        attr = self.df_dataset['category_name'].iloc[index]
+        dict_attr = self.df_annotations['category_name'].iloc[index]
 
-        return image, attr
+        return image, dict_attr
     
