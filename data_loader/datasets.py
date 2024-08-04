@@ -220,15 +220,15 @@ class Coco2014Dataset(Dataset):
             dataset_type = 'val2014'
             ann_file = f'{root}/annotations/instances_val2014.json'
         annotations = COCO(ann_file)
-#        imgIds = annotations.getImgIds()
-        imgIds = annotations.getImgIds()[:100]
+        imgIds = annotations.getImgIds()
+#        imgIds = annotations.getImgIds()[:100]
         
         if (not train):
             res_file = f'{root}/instances_val2014_fakebbox100_results.json'
             print(f'[INFO] res_file={res_file}')
             results = annotations.loadRes(res_file)
-#            imgIds = sorted(annotations.getImgIds())
-            imgIds = sorted(annotations.getImgIds())[:100]
+            imgIds = sorted(annotations.getImgIds())
+#            imgIds = sorted(annotations.getImgIds())[:100]
 
             cocoEval = COCOeval(annotations, results, 'bbox')
             cocoEval.params.imgIds = imgIds
@@ -266,15 +266,24 @@ class Coco2014Dataset(Dataset):
         return self.len
 
     def __getitem__(self, index):
+        # --- Load Image ---
         image_path = self.df_annotations['input_file'].to_list()[index]
         image = Image.open(image_path)
+        
+        # --- Grayscale to RGB (if image is RGB) ---
+        if (image.mode != 'RGB'):
+            image = image.convert('RGB')
+        
+        # --- Resize Image ---
         image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
         image = np.array(image, dtype=np.float32) / 255.0
         
+        # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)
 
-        dict_attr = self.df_annotations['category_name'].iloc[index]
+        # --- Load Annotation ---
+        image_id = self.df_annotations['image_id'].iloc[index]
 
-        return image, dict_attr
+        return image, image_id
     

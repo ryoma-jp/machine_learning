@@ -1,10 +1,12 @@
 
 import argparse
 import numpy as np
+import pickle
 import torch
 import torchvision
 from data_loader.data_loader import DataLoader
 from PIL import Image
+from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Benchmarking script')
@@ -29,27 +31,27 @@ def load_model(model):
     return model
 
 def predict(model, dataloader):
-    def _decode_predictions(predictions):
-        boxes = predictions[0]['boxes']
-        labels = predictions[0]['labels']
-        scores = predictions[0]['scores']
+    def _decode_predictions(predictions, image_ids):
+        predictions_decoded = []
+        for prediction, image_id in zip(predictions, image_ids):
+            prediction_decoded = [{'image_id': image_id.detach().tolist(), 'category_id': category_id.detach().tolist(), 'bbox': bbox.detach().tolist(), 'score': score.detach().numpy()} for category_id, bbox, score in zip(prediction['labels'], prediction['boxes'], prediction['scores'])]
+            predictions_decoded += prediction_decoded
         
-        return boxes, labels, scores
-    
-    batch = next(iter(dataloader.dataset.testloader))
-    batch_images = batch[0]
-    
-    # --- save image for debug ---
-#    image = Image.fromarray(dataloader.dataset.inverse_normalize(batch[0][0]).numpy().transpose(1, 2, 0).astype('uint8'))
-#    print(np.array(image, dtype=np.float32))
-#    image.save('test.jpg')
+        return predictions_decoded
     
     model.eval()
-    predictions = model(batch_images)
-    print(len(predictions))
-    print(predictions[0].keys())
     
-    return predictions
+    predictions_decoded = []
+    for batch in tqdm(dataloader.dataset.testloader):
+        batch_images = batch[0]
+        batch_image_ids = batch[1]
+        
+        predictions_decoded += _decode_predictions(model(batch_images), batch_image_ids)
+    
+    return predictions_decoded
+
+def evaluate(predictions, annotations):
+    pass
 
 def benchmark():
     dataloader = load_datasets()
@@ -58,7 +60,9 @@ def benchmark():
     
     model = load_model(models[0])
     predictions = predict(model, dataloader)
-    #print(predictions)
+    print(len(predictions))
+    
+    pickle.dump(predictions, open('predictions.pkl', 'wb'))
 
 def main():
     # --- Parse arguments ---
