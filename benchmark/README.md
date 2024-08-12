@@ -9,5 +9,6 @@ This directory contains the benchmarking performance of models.
 # How to run benchmark
 
 ```bash
-python benchmark.py
+cd /workspace/benchmark
+./run.sh
 ```

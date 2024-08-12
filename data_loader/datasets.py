@@ -220,15 +220,15 @@ class Coco2014Dataset(Dataset):
             dataset_type = 'val2014'
             ann_file = f'{root}/annotations/instances_val2014.json'
         annotations = COCO(ann_file)
-        imgIds = annotations.getImgIds()
-#        imgIds = annotations.getImgIds()[:100]
+#        imgIds = annotations.getImgIds()
+        imgIds = annotations.getImgIds()[:100]
         
         if (not train):
             res_file = f'{root}/instances_val2014_fakebbox100_results.json'
             print(f'[INFO] res_file={res_file}')
             results = annotations.loadRes(res_file)
-            imgIds = sorted(annotations.getImgIds())
-#            imgIds = sorted(annotations.getImgIds())[:100]
+#            imgIds = sorted(annotations.getImgIds())
+            imgIds = sorted(annotations.getImgIds())[:100]
 
             cocoEval = COCOeval(annotations, results, 'bbox')
             cocoEval.params.imgIds = imgIds
@@ -285,5 +285,5 @@ class Coco2014Dataset(Dataset):
         # --- Load Annotation ---
         image_id = self.df_annotations['image_id'].iloc[index]
 
-        return image, image_id
+        return image, image_id, index
     

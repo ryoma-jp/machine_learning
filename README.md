@@ -14,9 +14,9 @@ Please modify the parameters in `.env` file.
 ### Build Docker Image and Run Docker Container
 
 ```bash
-docker-compose build
-docker-compose up -d
-docker-compose exec ml bash
+$ docker-compose build
+$ docker-compose up -d
+$ docker-compose exec ml bash
 ```
 
 ### Jupyter Notebook

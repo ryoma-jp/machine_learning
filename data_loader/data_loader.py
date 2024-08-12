@@ -173,17 +173,24 @@ class _DataLoaderCoco2014PyTorch():
     Data Loader for COCO2014 dataset for PyTorch
     """
     def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+        # --- Define transform ---
+        #   - ToTensor: Convert PIL Image to Tensor
+        #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
+        #       - https://github.com/pytorch/vision/blob/fbb4cc54ed521ba912f50f180dc16a213775bf5c/torchvision/transforms/transforms.py#L107
+        #   - Normalize: Normalize the image with mean and standard deviation
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
         
         trainset = Coco2014Dataset(root=dataset_dir, train=True,
+                                                input_size=resize[0],
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                 shuffle=shuffle_trainloader, num_workers=8)
 
         testset = Coco2014Dataset(root=dataset_dir, train=False,
+                                            input_size=resize[0],
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                                 shuffle=shuffle_testloader, num_workers=8)
