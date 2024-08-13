@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:23.10-py3
+FROM nvcr.io/nvidia/pytorch:24.07-py3
 
 RUN pip install nvidia-pyindex onnx-graphsurgeon
 
