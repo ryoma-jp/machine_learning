@@ -17,12 +17,15 @@ class _DataLoaderCifar10PyTorch():
     Data Loader for CIFAR-10 dataset for PyTorch
     This class provides to load CIFAR-10 dataset for PyTorch.
     """
-    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
-        transform = transforms.Compose([
-            transforms.Resize(resize),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.Resize(resize),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         trainset = torchvision.datasets.CIFAR10(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
@@ -45,12 +48,15 @@ class _DataLoaderCifar100PyTorch():
     Data Loader for CIFAR-100 dataset for PyTorch
     This class provides to load CIFAR-100 dataset for PyTorch.
     """
-    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
-        transform = transforms.Compose([
-            transforms.Resize(resize),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.Resize(resize),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         trainset = torchvision.datasets.CIFAR100(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
@@ -94,12 +100,15 @@ class _DataLoaderFood101PyTorch():
     Data Loader for Food-101 dataset for PyTorch
     This class provides to load Food-101 dataset for PyTorch.
     """
-    def __init__(self, resize=(128, 128), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
-        transform = transforms.Compose([
-            transforms.Resize(resize),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+    def __init__(self, resize=(128, 128), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.Resize(resize),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         url = ' http://data.vision.ee.ethz.ch/cvl/food-101.tar.gz'
         filename = 'food-101.tar.gz'
@@ -152,18 +161,21 @@ class _DataLoaderOfficeHomePyTorch():
     Data Loader for OfficeHome dataset for PyTorch
     This class provides to load OfficeHome dataset for PyTorch.
     """
-    def __init__(self, resize=(227, 227), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(227, 227), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
         # --- Extract dataset ---
         filename = 'OfficeHomeDataset_10072016.zip'
         filepath = Path(dataset_dir, filename)
         extract_zip(str(filepath), dataset_dir)
         
         # --- Load dataset ---
-        transform = transforms.Compose([
-            transforms.Resize(resize),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.Resize(resize),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'OfficeHomeDataset_10072016/Art/'), transform=transform)
         self.train_file_list = [train_file[len(f'{dataset_dir}/OfficeHomeDataset_10072016/Art/'):] for train_file, _ in train_images.imgs]
@@ -175,16 +187,19 @@ class _DataLoaderCoco2014PyTorch():
     """
     Data Loader for COCO2014 dataset for PyTorch
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
         # --- Define transform ---
         #   - ToTensor: Convert PIL Image to Tensor
         #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
         #       - https://github.com/pytorch/vision/blob/fbb4cc54ed521ba912f50f180dc16a213775bf5c/torchvision/transforms/transforms.py#L107
         #   - Normalize: Normalize the image with mean and standard deviation
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         trainset = Coco2014Dataset(root=dataset_dir, train=True,
                                                 input_size=resize[0],
@@ -209,11 +224,14 @@ class _DataLoaderCoco2014ClassificationPyTorch():
     Data Loader for COCO2014 classification dataset for PyTorch
     This class provides to load COCO2014 classification dataset for PyTorch.
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         trainset = Coco2014ClassificationDataset(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
@@ -235,19 +253,19 @@ class _DataLoaderCoco2017PyTorch():
     """
     Data Loader for COCO2017 dataset for PyTorch
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
         # --- Define transform ---
         #   - ToTensor: Convert PIL Image to Tensor
         #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
         #       - https://github.com/pytorch/vision/blob/fbb4cc54ed521ba912f50f180dc16a213775bf5c/torchvision/transforms/transforms.py#L107
         #   - Normalize: Normalize the image with mean and standard deviation
-#        transform = transforms.Compose([
-#            transforms.ToTensor(),
-#            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-#        ])
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        if (transform is None):
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            transform = transform
         
         trainset = Coco2017Dataset(root=dataset_dir, train=True,
                                                 input_size=resize[0],
@@ -303,9 +321,9 @@ class DataLoader():
         'coco2017_pytorch': _DataLoaderCoco2017PyTorch,
     }
     
-    def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32) -> None:
+    def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32, transform=None) -> None:
         if (resize is None):
             resize = self.DEFAULT_SIZE[dataset_name]
             
-        self.dataset = self.FUNCTION_TABLE[dataset_name](resize=resize, dataset_dir=dataset_dir, batch_size=batch_size)
+        self.dataset = self.FUNCTION_TABLE[dataset_name](resize=resize, dataset_dir=dataset_dir, batch_size=batch_size, transform=transform)
         
