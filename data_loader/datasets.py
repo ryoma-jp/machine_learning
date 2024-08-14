@@ -287,3 +287,167 @@ class Coco2014Dataset(Dataset):
 
         return image, image_id, index
     
+class Coco2017Dataset(Dataset):
+    """
+    This class is used to create Dataset class for COCO 2017 dataset.
+    
+    Attributes:
+    root: The root directory where the COCO 2017 dataset is stored.
+    input_size: The size of the input images.
+    download: A boolean that indicates whether to download the COCO 2017 dataset.
+    train: A boolean that indicates whether to use the training or validation dataset.
+    transform: A list of preprocessing transformations to apply to the input images.
+    
+    Methods:
+    __init__(root, input_size, download, train, transform): Initializes the dataset.
+    __len__(): Returns the number of samples in the dataset.
+    __getitem__(index): Returns a sample from the dataset at the specified index.
+    """
+    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+        def _get_category_name(x, df_categories):
+            category_name = df_categories[df_categories['id']==x['category_id']].iloc[0]['name']
+            supercategory = df_categories[df_categories['id']==x['category_id']].iloc[0]['supercategory']
+            return pd.Series({'supercategory': supercategory, 'category_name': category_name})
+        
+        print('[INFO] Coco2017Dataset.__init__')
+        print(f'  * root={root}')
+        print(f'  * input_size={input_size}')
+        print(f'  * download={download}')
+        print(f'  * train={train}')
+        print(f'  * transform={transform}')
+        
+        tqdm.pandas()
+        super().__init__()
+        
+        if (download):
+            # --- Create root directory ---
+            Path(root).mkdir(parents=True, exist_ok=True)
+            
+            # --- Download COCO 2017 dataset ---
+            if (not Path(root, 'train2017.zip').exists()):
+                print('Downloading and extracting COCO 2017 dataset')
+                print('  * train2017.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/train2017.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'train2017.zip'], cwd=root)
+
+            if (not Path(root, 'val2017.zip').exists()):
+                print('  * val2017.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/zips/val2017.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'val2017.zip'], cwd=root)
+
+            if (not Path(root, 'annotations_trainval2017.zip').exists()):
+                print('  * annotations_trainval2017.zip')
+                subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip'], cwd=root)
+                subprocess.run(['unzip', '-q', 'annotations_trainval2017.zip'], cwd=root)
+        else:
+            # --- Load from root directory ---
+            pass
+        # --- Load COCO Annotations ---
+        if (train):
+            dataset_type = 'train2017'
+            ann_file = f'{root}/annotations/instances_train2017.json'
+        else:
+            dataset_type = 'val2017'
+            ann_file = f'{root}/annotations/instances_val2017.json'
+        self.annotations = COCO(ann_file)
+#        self.imgIds = annotations.getImgIds()
+        self.imgIds = self.annotations.getImgIds()[:100]
+        
+        # --- Load COCO Images Path ---
+        print('[INFO] Load COCO Images Path')
+        df_images = pd.DataFrame(self.annotations.loadImgs(self.imgIds))
+        df_images['file_name'] = df_images['file_name'].progress_apply(lambda x: os.path.join(root, dataset_type, x))
+        self.image_files = [os.path.join(root, dataset_type, f'{x:012d}.jpg') for x in self.imgIds]
+        
+        # --- Load COCO Categories ---
+        print('[INFO] Load COCO Categories')
+        df_categories = pd.DataFrame(self.annotations.loadCats(self.annotations.getCatIds()))
+        
+        # --- Load COCO Annotations ---
+        print('[INFO] Load COCO Annotations')
+        self.df_annotations = pd.DataFrame(self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=self.imgIds)))
+        print(self.df_annotations.head())
+        print(df_categories.head())
+        self.df_annotations[['supercategory', 'category_name']] = self.df_annotations.progress_apply(lambda x: _get_category_name(x, df_categories), axis=1)
+        
+        self.df_annotations['input_file'] = self.df_annotations['image_id'].progress_apply(lambda x: df_images[df_images['id']==x]['file_name'].iloc[0])
+        self.df_annotations['category_name'] = self.df_annotations['category_name'].astype('category')
+#        self.len = len(self.df_annotations)
+        self.len = len(self.imgIds)
+        self.transform = transform
+        
+        print(f'self.df_annotations.head(): {self.df_annotations.head()}')
+        print(f'self.df_annotations.columns: {self.df_annotations.columns}')
+        print(f'self.len: {self.len}')
+        print(f'imgIds: {self.imgIds}')
+        
+        self.input_size = input_size
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, index):
+        # --- Get Image ID ---
+        image_id = self.imgIds[index]
+        
+        # --- Load Image ---
+        image_path = self.image_files[index]
+        image = Image.open(image_path)
+        image_size = image.size
+        
+        # --- Grayscale to RGB (if image is RGB) ---
+        if (image.mode != 'RGB'):
+            image = image.convert('RGB')
+        
+        # --- Resize Image ---
+        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = np.array(image, dtype=np.float32) / 255.0
+        
+        # --- Transform ---
+        if (self.transform is not None):
+            image = self.transform(image)
+            
+        # --- Load Target ---
+        annotation = self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=image_id))
+#        print(f'annotation: {annotation}')
+#        print(f'annotation: {annotation[0]["bbox"]}')
+        bbox = [x['bbox'] for x in annotation]
+#        print(f'bbox: {bbox}')
+        target = {
+            'image_id': image_id,
+            'image_size': image_size,
+            'boxes': bbox,
+        }
+        
+        """
+        # --- Load Image ---
+        image_path = self.df_annotations['input_file'].to_list()[index]
+        image = Image.open(image_path)
+        
+        # --- Grayscale to RGB (if image is RGB) ---
+        if (image.mode != 'RGB'):
+            image = image.convert('RGB')
+        
+        # --- Resize Image ---
+        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = np.array(image, dtype=np.float32) / 255.0
+        
+        # --- Transform ---
+        if (self.transform is not None):
+            image = self.transform(image)
+
+        # --- Load Annotation ---
+        image_id = self.df_annotations['image_id'].iloc[index]
+        bbox = self.df_annotations['bbox'].iloc[index]
+        
+        # --- Target ---
+        target = {
+            'image_id': image_id,
+            'index': index,
+            'bbox': bbox
+        }
+        """
+
+#        return image, image_id, index
+        return image, target
+    

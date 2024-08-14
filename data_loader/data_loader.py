@@ -3,11 +3,14 @@ import os
 from pathlib import Path
 from urllib import request
 from utils.utils import extract_tar, extract_zip
-from data_loader.datasets import Coco2014ClassificationDataset, Coco2014Dataset
+from data_loader.datasets import Coco2014ClassificationDataset, Coco2014Dataset, Coco2017Dataset
 
 import torch
 import torchvision
 import torchvision.transforms as transforms
+
+def collate_fn(batch):
+    return tuple(zip(*batch))
 
 class _DataLoaderCifar10PyTorch():
     """
@@ -228,6 +231,45 @@ class _DataLoaderCoco2014ClassificationPyTorch():
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
         return transform(img)
 
+class _DataLoaderCoco2017PyTorch():
+    """
+    Data Loader for COCO2017 dataset for PyTorch
+    """
+    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False) -> None:
+        # --- Define transform ---
+        #   - ToTensor: Convert PIL Image to Tensor
+        #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
+        #       - https://github.com/pytorch/vision/blob/fbb4cc54ed521ba912f50f180dc16a213775bf5c/torchvision/transforms/transforms.py#L107
+        #   - Normalize: Normalize the image with mean and standard deviation
+#        transform = transforms.Compose([
+#            transforms.ToTensor(),
+#            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#        ])
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+        ])
+        
+        trainset = Coco2017Dataset(root=dataset_dir, train=True,
+                                                input_size=resize[0],
+                                                download=True, transform=transform)
+        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                shuffle=shuffle_trainloader,
+                                                collate_fn=collate_fn, num_workers=8)
+
+        testset = Coco2017Dataset(root=dataset_dir, train=False,
+                                            input_size=resize[0],
+                                            download=True, transform=transform)
+        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                shuffle=shuffle_testloader,
+                                                collate_fn=collate_fn, num_workers=8)
+
+        self.class_name = trainset.df_annotations['category_name'].unique().tolist()
+    
+    def inverse_normalize(self, img):
+#        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
+#        return transform(img) * 255.0
+        return img * 255.0
+
 class DataLoader():
     """
     Data Loader for PyTorch
@@ -249,6 +291,7 @@ class DataLoader():
         'officehome_pytorch': (227, 227),
         'coco2014_classification_pytorch': (224, 224),
         'coco2014_pytorch': (224, 224),
+        'coco2017_pytorch': (224, 224),
     }
     FUNCTION_TABLE = {
         'cifar10_pytorch': _DataLoaderCifar10PyTorch,
@@ -257,6 +300,7 @@ class DataLoader():
         'officehome_pytorch': _DataLoaderOfficeHomePyTorch,
         'coco2014_classification_pytorch': _DataLoaderCoco2014ClassificationPyTorch,
         'coco2014_pytorch': _DataLoaderCoco2014PyTorch,
+        'coco2017_pytorch': _DataLoaderCoco2017PyTorch,
     }
     
     def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32) -> None:
