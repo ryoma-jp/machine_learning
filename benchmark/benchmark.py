@@ -9,6 +9,9 @@ from data_loader.data_loader import DataLoader
 from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
+from models.pytorch.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Benchmarking script')
@@ -20,60 +23,76 @@ def parse_args():
     
     return parser.parse_args()
 
-def load_datasets(dataset_dir):
-    dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=(320, 320))
+def load_datasets(dataset_dir, transform):
+    dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform)
     
     return dataloader
 
-def load_model(model):
-    if (model == 'ssdlite320_mobilenet_v3_large'):
-        model = torchvision.models.detection.ssdlite320_mobilenet_v3_large(weights=torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights.COCO_V1)
+def load_model(model_name, device):
+    if (model_name == 'ssdlite320_mobilenet_v3_large'):
+        model_input_size = [1, 3, 320, 320]
+        model = SSDLite320MobileNetv3Large(device, model_input_size)
         
-    return model
+    return model, model_input_size
 
 def predict(device, model, dataloader, output_dir):
-    def _decode_predictions(predictions, image_ids, save_file):
-        predictions_decoded = []
-        for prediction, image_id in zip(predictions, image_ids):
-            prediction_decoded = [{'image_id': image_id.detach().cpu().tolist(), 'category_id': category_id.detach().cpu().tolist(), 'bbox': bbox.detach().cpu().tolist(), 'score': score.detach().cpu().numpy()} for category_id, bbox, score in zip(prediction['labels'], prediction['boxes'], prediction['scores'])]
-            predictions_decoded += prediction_decoded
-        pickle.dump(predictions_decoded, open(save_file, 'wb'))
-        
-        return
-    
     # --- Predict ---
-    model.to(device)
-    model.eval()
-    for i, batch in enumerate(tqdm(dataloader.dataset.testloader)):
-        batch_images = torch.Tensor(batch[0]).to(device)
-        batch_image_ids = batch[1]
-        
-        predictions = model(batch_images)
-        save_dir = Path(output_dir, 'batch_predictions')
-        save_dir.mkdir(parents=True, exist_ok=True)
-        save_file = Path(save_dir, f'predictions_batch{i:06d}.pkl')
-        _decode_predictions(predictions, batch_image_ids, save_file)
+    model.net.to(device)
+    predictions, targets = model.predict(dataloader.dataset.testloader)
 
-    return
+    return predictions, targets
 
-def evaluate(predictions, annotations):
-    pass
+def coco_evaluate(predictions, dataset_dir):
+    # --- Load COCO Annotations ---
+    ann_file = f'{dataset_dir}/annotations/instances_val2014.json'
+    coco_ann = COCO(ann_file)
+    
+    # --- Convert Predictions to COCO Format ---
+    coco_predictions = []
+    for prediction in predictions:
+        image_id = prediction['image_id']
+        for bbox, score, label in zip(prediction['boxes'], prediction['scores'], prediction['labels']):
+            coco_predictions.append({
+                'image_id': image_id,
+                'category_id': label,
+                'bbox': bbox,
+                'score': score,
+            })
+    coco_predictions = coco_ann.loadRes(coco_predictions)
+            
+    # --- Evaluate ---
+    cocoEval = COCOeval(coco_ann, coco_predictions, 'bbox')
+    cocoEval.params.imgIds = [prediction['image_id'] for prediction in predictions]
+    cocoEval.evaluate()
+    cocoEval.accumulate()
+    cocoEval.summarize()
 
 def benchmark(args, device):
     # --- Load Arguments ---
     dataset_dir = args.dataset_dir
     output_dir = args.output_dir
     
-    # --- Load Datasets ---
-    dataloader = load_datasets(dataset_dir)
-    
     # --- Load Model ---
     models = ['ssdlite320_mobilenet_v3_large']
-    model = load_model(models[0])
+    model, model_input_size = load_model(models[0], device)
+    
+    # --- Load Datasets ---
+    dataloader = load_datasets(dataset_dir, model.transform)
     
     # --- Predict ---
-    predict(device, model, dataloader, output_dir)
+    predictions, targets = predict(device, model, dataloader, output_dir)
+    for prediction, target in zip(predictions, targets):
+        prediction['image_id'] = target['image_id']
 
+        coef_width = target['image_size'][0] / model_input_size[3]
+        coef_height = target['image_size'][1] / model_input_size[2]
+        boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
+        prediction['boxes'] = boxes
+    print(len(predictions), len(targets))
+
+    # --- Evaluate ---
+    coco_evaluate(predictions, dataset_dir)
+    
 def main():
     # --- Parse arguments ---
     args = parse_args()

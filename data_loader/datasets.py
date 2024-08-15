@@ -219,18 +219,18 @@ class Coco2014Dataset(Dataset):
         else:
             dataset_type = 'val2014'
             ann_file = f'{root}/annotations/instances_val2014.json'
-        annotations = COCO(ann_file)
+        self.annotations = COCO(ann_file)
 #        imgIds = annotations.getImgIds()
-        imgIds = annotations.getImgIds()[:100]
+        self.imgIds = self.annotations.getImgIds()[:100]
         
         if (not train):
             res_file = f'{root}/instances_val2014_fakebbox100_results.json'
             print(f'[INFO] res_file={res_file}')
-            results = annotations.loadRes(res_file)
+            results = self.annotations.loadRes(res_file)
 #            imgIds = sorted(annotations.getImgIds())
-            imgIds = sorted(annotations.getImgIds())[:100]
+            imgIds = sorted(self.annotations.getImgIds())[:100]
 
-            cocoEval = COCOeval(annotations, results, 'bbox')
+            cocoEval = COCOeval(self.annotations, results, 'bbox')
             cocoEval.params.imgIds = imgIds
             cocoEval.evaluate()
             cocoEval.accumulate()
@@ -238,37 +238,46 @@ class Coco2014Dataset(Dataset):
         
         # --- Load COCO Images Path ---
         print('[INFO] Load COCO Images Path')
-        df_images = pd.DataFrame(annotations.loadImgs(imgIds))
+        df_images = pd.DataFrame(self.annotations.loadImgs(self.imgIds))
         df_images['file_name'] = df_images['file_name'].progress_apply(lambda x: os.path.join(root, dataset_type, x))
+        self.image_files = [os.path.join(root, dataset_type, f'COCO_val2014_{x:012d}.jpg') for x in self.imgIds]
         
         # --- Load COCO Categories ---
         print('[INFO] Load COCO Categories')
-        df_categories = pd.DataFrame(annotations.loadCats(annotations.getCatIds()))
+        df_categories = pd.DataFrame(self.annotations.loadCats(self.annotations.getCatIds()))
         
         # --- Load COCO Annotations ---
         print('[INFO] Load COCO Annotations')
-        self.df_annotations = pd.DataFrame(annotations.loadAnns(annotations.getAnnIds(imgIds=imgIds)))
+        self.df_annotations = pd.DataFrame(self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=self.imgIds)))
         print(self.df_annotations.head())
         print(df_categories.head())
         self.df_annotations[['supercategory', 'category_name']] = self.df_annotations.progress_apply(lambda x: _get_category_name(x, df_categories), axis=1)
         
         self.df_annotations['input_file'] = self.df_annotations['image_id'].progress_apply(lambda x: df_images[df_images['id']==x]['file_name'].iloc[0])
         self.df_annotations['category_name'] = self.df_annotations['category_name'].astype('category')
-        self.len = len(self.df_annotations)
+#        self.len = len(self.df_annotations)
+        self.len = len(self.imgIds)
         self.transform = transform
         
-        print(self.df_annotations.head())
-        print(self.df_annotations.columns)
+        print(f'self.df_annotations.head(): {self.df_annotations.head()}')
+        print(f'self.df_annotations.columns: {self.df_annotations.columns}')
+        print(f'self.len: {self.len}')
+        print(f'imgIds: {self.imgIds}')
         
         self.input_size = input_size
+
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, index):
+        # --- Get Image ID ---
+        image_id = self.imgIds[index]
+        
         # --- Load Image ---
-        image_path = self.df_annotations['input_file'].to_list()[index]
+        image_path = self.image_files[index]
         image = Image.open(image_path)
+        image_size = image.size
         
         # --- Grayscale to RGB (if image is RGB) ---
         if (image.mode != 'RGB'):
@@ -281,11 +290,20 @@ class Coco2014Dataset(Dataset):
         # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)
+            
+        # --- Load Target ---
+        annotation = self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=image_id))
+#        print(f'annotation: {annotation}')
+#        print(f'annotation: {annotation[0]["bbox"]}')
+        bbox = [x['bbox'] for x in annotation]
+#        print(f'bbox: {bbox}')
+        target = {
+            'image_id': image_id,
+            'image_size': image_size,
+            'boxes': bbox,
+        }
 
-        # --- Load Annotation ---
-        image_id = self.df_annotations['image_id'].iloc[index]
-
-        return image, image_id, index
+        return image, target
     
 class Coco2017Dataset(Dataset):
     """
@@ -350,8 +368,8 @@ class Coco2017Dataset(Dataset):
             dataset_type = 'val2017'
             ann_file = f'{root}/annotations/instances_val2017.json'
         self.annotations = COCO(ann_file)
-#        self.imgIds = annotations.getImgIds()
-        self.imgIds = self.annotations.getImgIds()[:100]
+        self.imgIds = self.annotations.getImgIds()
+#        self.imgIds = self.annotations.getImgIds()[:100]
         
         # --- Load COCO Images Path ---
         print('[INFO] Load COCO Images Path')
