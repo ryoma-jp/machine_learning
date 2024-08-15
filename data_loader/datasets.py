@@ -204,11 +204,6 @@ class Coco2014Dataset(Dataset):
                 print('  * annotations_trainval2014.zip')
                 subprocess.run(['wget', '-q', 'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'], cwd=root)
                 subprocess.run(['unzip', '-q', 'annotations_trainval2014.zip'], cwd=root)
-            
-            if (not Path(root, 'instances_val2014_fakebbox100_results.json').exists()):
-                print('  * instances_val2014_fakebbox100_results.json')
-                subprocess.run(['wget', '-q', 'https://raw.githubusercontent.com/cocodataset/cocoapi/master/results/instances_val2014_fakebbox100_results.json'], cwd=root)
-            
         else:
             # --- Load from root directory ---
             pass
@@ -220,21 +215,8 @@ class Coco2014Dataset(Dataset):
             dataset_type = 'val2014'
             ann_file = f'{root}/annotations/instances_val2014.json'
         self.annotations = COCO(ann_file)
-#        imgIds = annotations.getImgIds()
-        self.imgIds = self.annotations.getImgIds()[:100]
-        
-        if (not train):
-            res_file = f'{root}/instances_val2014_fakebbox100_results.json'
-            print(f'[INFO] res_file={res_file}')
-            results = self.annotations.loadRes(res_file)
-#            imgIds = sorted(annotations.getImgIds())
-            imgIds = sorted(self.annotations.getImgIds())[:100]
-
-            cocoEval = COCOeval(self.annotations, results, 'bbox')
-            cocoEval.params.imgIds = imgIds
-            cocoEval.evaluate()
-            cocoEval.accumulate()
-            cocoEval.summarize()
+        self.imgIds = self.annotations.getImgIds()
+#        self.imgIds = self.annotations.getImgIds()[:100]
         
         # --- Load COCO Images Path ---
         print('[INFO] Load COCO Images Path')
