@@ -76,6 +76,8 @@ def coco_evaluate(predictions, dataset_dir, dataset_name):
     cocoEval.evaluate()
     cocoEval.accumulate()
     cocoEval.summarize()
+    
+    return cocoEval
 
 def benchmark(args, device):
     # --- Load Arguments ---
@@ -87,22 +89,37 @@ def benchmark(args, device):
     model, model_input_size = load_model(models[0], device)
     
     datasets = ['coco2014', 'coco2017']
-    for dataset_name in datasets:
-        # --- Load Datasets ---
-        dataloader = load_dataset(dataset_name, dataset_dir, model.transform)
-        
-        # --- Predict ---
-        predictions, targets = predict(device, model, dataloader, output_dir)
-        for prediction, target in zip(predictions, targets):
-            prediction['image_id'] = target['image_id']
+    benchmark_results = []
+    for model_name in models:
+        for dataset_name in datasets:
+            # --- Load Datasets ---
+            dataloader = load_dataset(dataset_name, dataset_dir, model.transform)
+            
+            # --- Predict ---
+            predictions, targets = predict(device, model, dataloader, output_dir)
+            for prediction, target in zip(predictions, targets):
+                prediction['image_id'] = target['image_id']
 
-            coef_width = target['image_size'][0] / model_input_size[3]
-            coef_height = target['image_size'][1] / model_input_size[2]
-            boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
-            prediction['boxes'] = boxes
+                coef_width = target['image_size'][0] / model_input_size[3]
+                coef_height = target['image_size'][1] / model_input_size[2]
+                boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
+                prediction['boxes'] = boxes
 
-        # --- Evaluate ---
-        coco_evaluate(predictions, dataset_dir, dataset_name)
+            # --- Evaluate ---
+            cocoEval = coco_evaluate(predictions, dataset_dir, dataset_name)
+
+            # --- Save Results ---
+            benchmark_results.append({
+                'model': model_name,
+                'dataset': dataset_name,
+                'task': 'object_detection',
+                'framework': 'pytorch',
+                'AP50': cocoEval.stats[1],
+                'AP75': cocoEval.stats[2],
+                'framerate': 'T.B.D',
+            })
+    
+    print(pd.DataFrame(benchmark_results))
     
 def main():
     # --- Parse arguments ---
