@@ -5,8 +5,9 @@ import torchvision
 import torchvision.transforms as transforms
 from torchinfo import summary
 from tqdm import tqdm
+from models.pytorch.pytorch_model_base import PyTorchModelBase
 
-class SSDLite320MobileNetv3Large():
+class SSDLite320MobileNetv3Large(PyTorchModelBase):
     def __init__(self, device, input_size, pth_path=None) -> None:
         '''Initialize SimpleCNN
         
@@ -16,8 +17,9 @@ class SSDLite320MobileNetv3Large():
             pth_path (str): Path to the model checkpoint
         '''
         
-        # --- Set device ---
+        # --- Set parameters ---
         self.device = device
+        self.input_size = input_size
         
         # --- Load model ---
         if (pth_path is None):
@@ -53,3 +55,6 @@ class SSDLite320MobileNetv3Large():
         # --- T.B.D ---
         return
     
+    def get_output_names(self) -> list:
+        return ['boxes', 'scores', 'classes']
+
