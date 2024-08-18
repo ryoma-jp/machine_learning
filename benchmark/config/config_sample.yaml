@@ -1,5 +1,6 @@
 PyTorch_SSDLite320_MobileNetv3_Large_COCO2014:
   name: "PyTorch_SSDLite320_MobileNetv3_Large_COCO2014"
+  framework: "PyTorch"
   dataset: "coco2014"
   dataset_dir: "dataset"
   output_dir: "outputs/PyTorch_SSDLite320_MobileNetv3_Large_COCO2014"
@@ -8,8 +9,27 @@ PyTorch_SSDLite320_MobileNetv3_Large_COCO2014:
 
 PyTorch_SSDLite320_MobileNetv3_Large_COCO2017:
   name: "PyTorch_SSDLite320_MobileNetv3_Large_COCO2017"
+  framework: "PyTorch"
   dataset: "coco2017"
   dataset_dir: "dataset"
   output_dir: "outputs/PyTorch_SSDLite320_MobileNetv3_Large_COCO2017"
+  model_name: "ssdlite320_mobilenet_v3_large"
+  model_path: ""
+
+ONNX_SSDLite320_MobileNetv3_Large_COCO2014:
+  name: "ONNX_SSDLite320_MobileNetv3_Large_COCO2014"
+  framework: "ONNX"
+  dataset: "coco2014"
+  dataset_dir: "dataset"
+  output_dir: "outputs/ONNX_SSDLite320_MobileNetv3_Large_COCO2014"
+  model_name: "ssdlite320_mobilenet_v3_large"
+  model_path: ""
+
+ONNX_SSDLite320_MobileNetv3_Large_COCO2017:
+  name: "ONNX_SSDLite320_MobileNetv3_Large_COCO2017"
+  framework: "ONNX"
+  dataset: "coco2017"
+  dataset_dir: "dataset"
+  output_dir: "outputs/ONNX_SSDLite320_MobileNetv3_Large_COCO2017"
   model_name: "ssdlite320_mobilenet_v3_large"
   model_path: ""

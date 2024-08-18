@@ -1,3 +1,5 @@
 #! /bin/bash
 
-python3 benchmark.py
+CONFIG_FILE="config/config_sample.yaml"
+
+python3 benchmark.py --config $CONFIG_FILE

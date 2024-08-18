@@ -10,7 +10,8 @@ from data_loader.data_loader import DataLoader
 from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
-from models.pytorch.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large
+from models.pytorch.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large as PyTorchSSDLite320MobileNetv3Large
+from models.onnx.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large as ONNXSSDLite320MobileNetv3Large
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
@@ -22,26 +23,30 @@ def parse_args():
     
     return parser.parse_args()
 
-def load_dataset(dataset_name, dataset_dir, transform):
+def load_dataset(dataset_name, dataset_dir, transform, batch_size):
     if (dataset_name == 'coco2014'):
-        dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform)
+        dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform, batch_size=batch_size)
     elif (dataset_name == 'coco2017'):
-        dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform)
+        dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform, batch_size=batch_size)
     else:
         raise ValueError(f'Invalid dataset_name: {dataset_name}')
     
     return dataloader
 
-def load_model(model_name, device):
+def load_model(model_name, device, framework, output_dir):
     if (model_name == 'ssdlite320_mobilenet_v3_large'):
         model_input_size = [1, 3, 320, 320]
-        model = SSDLite320MobileNetv3Large(device, model_input_size)
+        if (framework == 'PyTorch'):
+            model = PyTorchSSDLite320MobileNetv3Large(device, model_input_size, output_dir=output_dir)
+        elif (framework == 'ONNX'):
+            model = ONNXSSDLite320MobileNetv3Large(device, model_input_size, output_dir=output_dir)
+        else:
+            raise ValueError(f'Invalid framework: {framework}')
         
     return model, model_input_size
 
 def predict(device, model, dataloader, output_dir):
     # --- Predict ---
-    model.net.to(device)
     predictions, targets = model.predict(dataloader.dataset.testloader)
 
     return predictions, targets
@@ -89,6 +94,7 @@ def benchmark(args, device):
         print(benchmark)
         
         benchmark_name = config[benchmark]['name']
+        framework = config[benchmark]['framework']
         dataset_name = config[benchmark]['dataset']
         dataset_dir = config[benchmark]['dataset_dir']
         output_dir = config[benchmark]['output_dir']
@@ -99,10 +105,13 @@ def benchmark(args, device):
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # --- Load Model ---
-        model, model_input_size = load_model(model_name, device)
+        model, model_input_size = load_model(model_name, device, framework, output_dir)
         
         # --- Load Datasets ---
-        dataloader = load_dataset(dataset_name, dataset_dir, model.transform)
+        batch_size = 32
+        if (framework == 'ONNX'):
+            batch_size = 1
+        dataloader = load_dataset(dataset_name, dataset_dir, model.transform, batch_size)
         
         # --- Predict ---
         predictions, targets = predict(device, model, dataloader, output_dir)
@@ -122,7 +131,7 @@ def benchmark(args, device):
             'model': model_name,
             'dataset': dataset_name,
             'task': 'object_detection',
-            'framework': 'pytorch',
+            'framework': framework,
             'AP50': cocoEval.stats[1],
             'AP75': cocoEval.stats[2],
             'framerate': 'T.B.D',

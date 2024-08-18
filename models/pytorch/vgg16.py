@@ -126,16 +126,18 @@ class Net(nn.Module):
     
 
 class VGG16():
-    def __init__(self, device, input_size, num_classes) -> None:
+    def __init__(self, device, input_size, num_classes, output_dir='outputs') -> None:
         '''Initialize VGG16
         
         Args:
             device (torch.device): Device to use
             input_size (tuple): Input size of the model (N, C, H, W)
             num_classes (int): Number of classes
+            output_dir (str): Output directory
         '''
         self.device = device
         net_input_size = input_size[1:]
+        self.output_dir = output_dir
         self.net = Net(net_input_size, num_classes)
         self.net.to(self.device)
         print(summary(self.net, input_size=input_size))
@@ -188,6 +190,7 @@ class VGG16():
             torch.save(self.net.state_dict(), model_path)
             
     def predict(self, testloader) -> Tuple[np.ndarray, np.ndarray]:
+        self.net.to(self.device)
         predictions = []
         labels = []
         self.net.eval()

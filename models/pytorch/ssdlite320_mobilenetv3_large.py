@@ -8,18 +8,20 @@ from tqdm import tqdm
 from models.pytorch.pytorch_model_base import PyTorchModelBase
 
 class SSDLite320MobileNetv3Large(PyTorchModelBase):
-    def __init__(self, device, input_size, pth_path=None) -> None:
+    def __init__(self, device, input_size, output_dir='outputs', pth_path=None) -> None:
         '''Initialize SimpleCNN
         
         Args:
             device (torch.device): Device to use
             input_size (tuple): Input size of the model (N, C, H, W)
+            output_dir (str): Output directory
             pth_path (str): Path to the model checkpoint
         '''
         
         # --- Set parameters ---
         self.device = device
         self.input_size = input_size
+        self.output_dir = output_dir
         
         # --- Load model ---
         if (pth_path is None):
@@ -38,6 +40,7 @@ class SSDLite320MobileNetv3Large(PyTorchModelBase):
     def predict(self, testloader, score_th=0.5):
         predictions = []
         targets = []
+        self.net.to(self.device)
         with torch.no_grad():
             for (inputs, targets_) in tqdm(testloader):
                 inputs = [input.to(self.device) for input in inputs]
@@ -56,5 +59,5 @@ class SSDLite320MobileNetv3Large(PyTorchModelBase):
         return
     
     def get_output_names(self) -> list:
-        return ['boxes', 'scores', 'classes']
+        return ['boxes', 'scores', 'labels']
 

@@ -70,7 +70,7 @@ class Net(nn.Module):
     
 
 class SimpleCNN():
-    def __init__(self, device, input_size, num_classes, pth_path=None) -> None:
+    def __init__(self, device, input_size, num_classes, output_dir='outputs', pth_path=None) -> None:
         '''Initialize SimpleCNN
         
         Args:
@@ -80,6 +80,7 @@ class SimpleCNN():
         '''
         self.device = device
         net_input_size = input_size[1:]
+        self.output_dir = output_dir
         self.net = Net(net_input_size, num_classes)
         
         if (pth_path is None):
@@ -205,6 +206,7 @@ class SimpleCNN():
         return train_results
     
     def predict(self, testloader) -> Tuple[np.ndarray, np.ndarray]:
+        self.net.to(self.device)
         predictions = []
         labels = []
         with torch.no_grad():
