@@ -5,6 +5,7 @@ import pandas as pd
 import pickle
 import torch
 import torchvision
+import yaml
 from data_loader.data_loader import DataLoader
 from PIL import Image
 from tqdm import tqdm
@@ -16,10 +17,8 @@ from pycocotools.cocoeval import COCOeval
 def parse_args():
     parser = argparse.ArgumentParser(description='Benchmarking script')
 
-    parser.add_argument('--dataset_dir', type=str, default='dataset',
-                        help='Dataset directory')
-    parser.add_argument('--output_dir', type=str, default='output',
-                        help='Output directory')
+    parser.add_argument('--config', type=str, default='config/config_sample.yaml',
+                        help='Configuration file')
     
     return parser.parse_args()
 
@@ -80,51 +79,60 @@ def coco_evaluate(predictions, dataset_dir, dataset_name):
     return cocoEval
 
 def benchmark(args, device):
-    # --- Load Arguments ---
-    dataset_dir = args.dataset_dir
-    output_dir = args.output_dir
+    # --- Load YAML configuration file ---
+    with open(args.config) as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
     
-    # --- Load Model ---
-    models = ['ssdlite320_mobilenet_v3_large']
-    model, model_input_size = load_model(models[0], device)
-    
-    datasets = ['coco2014', 'coco2017']
+    # --- Run Benchmark ---
     benchmark_results = []
-    for model_name in models:
-        for dataset_name in datasets:
-            # --- Load Datasets ---
-            dataloader = load_dataset(dataset_name, dataset_dir, model.transform)
-            
-            # --- Predict ---
-            predictions, targets = predict(device, model, dataloader, output_dir)
-            for prediction, target in zip(predictions, targets):
-                prediction['image_id'] = target['image_id']
+    for benchmark in config:
+        print(benchmark)
+        
+        benchmark_name = config[benchmark]['name']
+        dataset_name = config[benchmark]['dataset']
+        dataset_dir = config[benchmark]['dataset_dir']
+        output_dir = config[benchmark]['output_dir']
+        model_name = config[benchmark]['model_name']
+        model_path = config[benchmark]['model_path']
+        
+        Path(dataset_dir).mkdir(parents=True, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        
+        # --- Load Model ---
+        model, model_input_size = load_model(model_name, device)
+        
+        # --- Load Datasets ---
+        dataloader = load_dataset(dataset_name, dataset_dir, model.transform)
+        
+        # --- Predict ---
+        predictions, targets = predict(device, model, dataloader, output_dir)
+        for prediction, target in zip(predictions, targets):
+            prediction['image_id'] = target['image_id']
 
-                coef_width = target['image_size'][0] / model_input_size[3]
-                coef_height = target['image_size'][1] / model_input_size[2]
-                boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
-                prediction['boxes'] = boxes
+            coef_width = target['image_size'][0] / model_input_size[3]
+            coef_height = target['image_size'][1] / model_input_size[2]
+            boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
+            prediction['boxes'] = boxes
 
-            # --- Evaluate ---
-            cocoEval = coco_evaluate(predictions, dataset_dir, dataset_name)
+        # --- Evaluate ---
+        cocoEval = coco_evaluate(predictions, dataset_dir, dataset_name)
 
-            # --- Save Results ---
-            benchmark_results.append({
-                'model': model_name,
-                'dataset': dataset_name,
-                'task': 'object_detection',
-                'framework': 'pytorch',
-                'AP50': cocoEval.stats[1],
-                'AP75': cocoEval.stats[2],
-                'framerate': 'T.B.D',
-            })
-    
+        # --- Save Results ---
+        benchmark_results.append({
+            'model': model_name,
+            'dataset': dataset_name,
+            'task': 'object_detection',
+            'framework': 'pytorch',
+            'AP50': cocoEval.stats[1],
+            'AP75': cocoEval.stats[2],
+            'framerate': 'T.B.D',
+        })
+        
     print(pd.DataFrame(benchmark_results))
     
 def main():
     # --- Parse arguments ---
     args = parse_args()
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     
     # --- Device ---
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

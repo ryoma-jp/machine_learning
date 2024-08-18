@@ -244,7 +244,7 @@ class Coco2014Dataset(Dataset):
         print(f'self.df_annotations.head(): {self.df_annotations.head()}')
         print(f'self.df_annotations.columns: {self.df_annotations.columns}')
         print(f'self.len: {self.len}')
-        print(f'imgIds: {self.imgIds}')
+        print(f'imgIds: {self.imgIds[:10]}')
         
         self.input_size = input_size
 
@@ -379,7 +379,7 @@ class Coco2017Dataset(Dataset):
         print(f'self.df_annotations.head(): {self.df_annotations.head()}')
         print(f'self.df_annotations.columns: {self.df_annotations.columns}')
         print(f'self.len: {self.len}')
-        print(f'imgIds: {self.imgIds}')
+        print(f'imgIds: {self.imgIds[:10]}')
         
         self.input_size = input_size
 
