@@ -6,6 +6,8 @@ import json
 import pandas as pd
 import numpy as np
 import cv2
+import time
+
 from tqdm import tqdm
 
 from pathlib import Path
@@ -254,14 +256,17 @@ class Coco2014Dataset(Dataset):
 
     def __getitem__(self, index):
         # --- Get Image ID ---
+        start = time.time()
         image_id = self.imgIds[index]
         
         # --- Load Image ---
         image_path = self.image_files[index]
         image = Image.open(image_path)
         image_size = image.size
+        load_image_time = time.time() - start
         
         # --- Grayscale to RGB (if image is RGB) ---
+        start = time.time()
         if (image.mode != 'RGB'):
             image = image.convert('RGB')
         
@@ -272,20 +277,31 @@ class Coco2014Dataset(Dataset):
         # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)
-            
+        preprocessing_time = time.time() - start
+        
         # --- Load Target ---
+        start = time.time()
         annotation = self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=image_id))
 #        print(f'annotation: {annotation}')
 #        print(f'annotation: {annotation[0]["bbox"]}')
         bbox = [x['bbox'] for x in annotation]
 #        print(f'bbox: {bbox}')
+        load_target_time = time.time() - start
+        
         target = {
             'image_id': image_id,
             'image_size': image_size,
             'boxes': bbox,
         }
-
-        return image, target
+        
+        # --- T.B.D ---
+#        preprocessing_time = {
+#            'load_image_time': load_image_time,
+#            'preprocessing_time': preprocessing_time,
+#            'load_target_time': load_target_time,
+#        }
+        
+        return image, target, preprocessing_time
     
 class Coco2017Dataset(Dataset):
     """
@@ -388,14 +404,17 @@ class Coco2017Dataset(Dataset):
 
     def __getitem__(self, index):
         # --- Get Image ID ---
+        start = time.time()
         image_id = self.imgIds[index]
         
         # --- Load Image ---
         image_path = self.image_files[index]
         image = Image.open(image_path)
         image_size = image.size
+        load_image_time = time.time() - start
         
         # --- Grayscale to RGB (if image is RGB) ---
+        start = time.time()
         if (image.mode != 'RGB'):
             image = image.convert('RGB')
         
@@ -406,48 +425,29 @@ class Coco2017Dataset(Dataset):
         # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)
-            
+        preprocessing_time = time.time() - start
+        
         # --- Load Target ---
+        start = time.time()
         annotation = self.annotations.loadAnns(self.annotations.getAnnIds(imgIds=image_id))
 #        print(f'annotation: {annotation}')
 #        print(f'annotation: {annotation[0]["bbox"]}')
         bbox = [x['bbox'] for x in annotation]
 #        print(f'bbox: {bbox}')
+        load_target_time = time.time() - start
+        
         target = {
             'image_id': image_id,
             'image_size': image_size,
             'boxes': bbox,
         }
         
-        """
-        # --- Load Image ---
-        image_path = self.df_annotations['input_file'].to_list()[index]
-        image = Image.open(image_path)
+        # --- T.B.D ---
+#        preprocessing_time = {
+#            'load_image_time': load_image_time,
+#            'preprocessing_time': preprocessing_time,
+#            'load_target_time': load_target_time,
+#        }
         
-        # --- Grayscale to RGB (if image is RGB) ---
-        if (image.mode != 'RGB'):
-            image = image.convert('RGB')
-        
-        # --- Resize Image ---
-        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
-        image = np.array(image, dtype=np.float32) / 255.0
-        
-        # --- Transform ---
-        if (self.transform is not None):
-            image = self.transform(image)
+        return image, target, preprocessing_time
 
-        # --- Load Annotation ---
-        image_id = self.df_annotations['image_id'].iloc[index]
-        bbox = self.df_annotations['bbox'].iloc[index]
-        
-        # --- Target ---
-        target = {
-            'image_id': image_id,
-            'index': index,
-            'bbox': bbox
-        }
-        """
-
-#        return image, image_id, index
-        return image, target
-    

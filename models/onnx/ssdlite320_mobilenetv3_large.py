@@ -2,6 +2,7 @@
 import onnxruntime
 import torchvision.transforms as transforms
 import numpy as np
+import time
 from tqdm import tqdm
 from pathlib import Path
 from models.pytorch.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large as PyTorchSSDLite320MobileNetv3Large
@@ -44,12 +45,18 @@ class SSDLite320MobileNetv3Large():
     def predict(self, testloader, score_th=0.5):
         predictions = []
         targets = []
-        for (inputs, targets_) in tqdm(testloader):
+        processing_time = {
+            'preprocessing': 0.0,
+            'inference': 0.0,
+        }
+        for (inputs, targets_, preprocessing_time_) in tqdm(testloader):
+            start = time.time()
             inputs = np.array([input.numpy() for input in inputs])
             session_input = {
                 self.session.get_inputs()[0].name: inputs,
             }
             results = self.session.run([], session_input)
+            inference_time = time.time() - start
             session_output = {
                 self.session.get_outputs()[i].name: results[i] for i in range(len(results))
             }
@@ -59,7 +66,13 @@ class SSDLite320MobileNetv3Large():
             boxes = predictions[-1]['boxes']
             predictions[-1]['boxes'] = np.array([boxes[:, 0], boxes[:, 1], boxes[:, 2]-boxes[:, 0], boxes[:, 3]-boxes[:, 1]]).T
             targets += targets_
-        return predictions, targets
+            processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
+            processing_time['inference'] += inference_time
+        
+        n_data = len(targets)
+        processing_time['preprocessing'] /= n_data
+        processing_time['inference'] /= n_data
+        return predictions, targets, processing_time
     
     def evaluate(self, y_true, y_pred) -> dict:
         # --- T.B.D ---

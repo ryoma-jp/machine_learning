@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
+import time
 from torchinfo import summary
 from tqdm import tqdm
 from models.pytorch.pytorch_model_base import PyTorchModelBase
@@ -40,19 +41,31 @@ class SSDLite320MobileNetv3Large(PyTorchModelBase):
     def predict(self, testloader, score_th=0.5):
         predictions = []
         targets = []
+        processing_time = {
+            'preprocessing': 0.0,
+            'inference': 0.0,
+        }
         self.net.to(self.device)
         with torch.no_grad():
-            for (inputs, targets_) in tqdm(testloader):
+            for (inputs, targets_, preprocessing_time_) in tqdm(testloader):
                 inputs = [input.to(self.device) for input in inputs]
                 self.net.eval()
+                start = time.time()
                 outputs = self.net(inputs)
+                inference_time = time.time() - start
                 for output in outputs:
                     valid_prediction = output['scores'] > score_th
                     predictions += [{key: output[key][valid_prediction].cpu().detach().numpy() for key in output.keys()}]
                     boxes = predictions[-1]['boxes']
                     predictions[-1]['boxes'] = np.array([boxes[:, 0], boxes[:, 1], boxes[:, 2]-boxes[:, 0], boxes[:, 3]-boxes[:, 1]]).T
                 targets += targets_
-        return predictions, targets
+                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
+                processing_time['inference'] += inference_time
+            
+            n_data = len(targets)
+            processing_time['preprocessing'] /= n_data
+            processing_time['inference'] /= n_data
+        return predictions, targets, processing_time
     
     def evaluate(self, y_true, y_pred) -> dict:
         # --- T.B.D ---

@@ -47,9 +47,9 @@ def load_model(model_name, device, framework, output_dir):
 
 def predict(device, model, dataloader, output_dir):
     # --- Predict ---
-    predictions, targets = model.predict(dataloader.dataset.testloader)
+    predictions, targets, preprocessing_time = model.predict(dataloader.dataset.testloader)
 
-    return predictions, targets
+    return predictions, targets, preprocessing_time
 
 def coco_evaluate(predictions, dataset_dir, dataset_name):
     # --- Load COCO Annotations ---
@@ -114,7 +114,7 @@ def benchmark(args, device):
         dataloader = load_dataset(dataset_name, dataset_dir, model.transform, batch_size)
         
         # --- Predict ---
-        predictions, targets = predict(device, model, dataloader, output_dir)
+        predictions, targets, processing_time = predict(device, model, dataloader, output_dir)
         for prediction, target in zip(predictions, targets):
             prediction['image_id'] = target['image_id']
 
@@ -134,7 +134,7 @@ def benchmark(args, device):
             'framework': framework,
             'AP50': cocoEval.stats[1],
             'AP75': cocoEval.stats[2],
-            'framerate': 'T.B.D',
+            'framerate': 1.0 / processing_time['inference'],
         })
         
     print(pd.DataFrame(benchmark_results))
