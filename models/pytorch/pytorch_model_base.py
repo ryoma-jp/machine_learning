@@ -12,5 +12,5 @@ class PyTorchModelBase():
             opset_version=11,
             input_names=input_names,
             output_names=output_names,
-            verbose=True)
+            verbose=False)
         self.net.to(self.device)
