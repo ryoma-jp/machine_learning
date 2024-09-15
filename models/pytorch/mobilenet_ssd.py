@@ -17,6 +17,7 @@ import logging
 import os
 import cv2
 import pathlib
+import xml.etree.ElementTree as ET
 class VOCDataset:
     
     def __init__(self, root, transform=None, target_transform=None, is_test=False, keep_difficult=False, label_file=None):
@@ -29,7 +30,7 @@ class VOCDataset:
         self.transform = transform
         self.target_transform = target_transform
         if is_test:
-            image_sets_file = self.root / "ImageSets/Main/test.txt"
+            image_sets_file = self.root / "ImageSets/Main/val.txt"
         else:
             image_sets_file = self.root / "ImageSets/Main/trainval.txt"
         self.ids = VOCDataset._read_image_ids(image_sets_file)
