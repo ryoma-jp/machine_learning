@@ -9,6 +9,7 @@ from torchinfo import summary
 
 from pathlib import Path
 from sklearn.metrics import accuracy_score, classification_report
+from models.pytorch.pytorch_model_base import PyTorchModelBase
 
 class Net(nn.Module):
     def __init__(self, input_size, classes_num) -> None:
@@ -69,7 +70,7 @@ class Net(nn.Module):
         return x
     
 
-class SimpleCNN():
+class SimpleCNN(PyTorchModelBase):
     def __init__(self, device, input_size, num_classes, output_dir='outputs', pth_path=None) -> None:
         '''Initialize SimpleCNN
         
@@ -80,6 +81,7 @@ class SimpleCNN():
         '''
         self.device = device
         net_input_size = input_size[1:]
+        self.input_size = [1] + list(input_size[1:])
         self.output_dir = output_dir
         self.net = Net(net_input_size, num_classes)
         
@@ -202,6 +204,7 @@ class SimpleCNN():
                 Path(output_dir).mkdir(parents=True, exist_ok=True)
             model_path = Path(output_dir, 'model.pth')
             torch.save(self.net.state_dict(), model_path)
+            self.convert_to_onnx(Path(output_dir, 'model.onnx'))
         
         return train_results
     
