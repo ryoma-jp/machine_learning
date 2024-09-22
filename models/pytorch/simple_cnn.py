@@ -21,17 +21,20 @@ class Net(nn.Module):
         '''
         super().__init__()
         channels, height, width = input_size
-        self.conv3_64 = nn.Conv2d(channels, 64, 3, padding='same')
+        kernel_size = (3, 3)
+        padding = (1, 1)
+        
+        self.conv3_64 = nn.Conv2d(channels, 64, kernel_size=kernel_size, padding=padding)
         self.bn2d64_1 = nn.BatchNorm2d(64)
-        self.conv64_64 = nn.Conv2d(64, 64, 3, padding='same')
+        self.conv64_64 = nn.Conv2d(64, 64, kernel_size=kernel_size, padding=padding)
         self.bn2d64_2 = nn.BatchNorm2d(64)
-        self.conv64_128 = nn.Conv2d(64, 128, 3, padding='same')
+        self.conv64_128 = nn.Conv2d(64, 128, kernel_size=kernel_size, padding=padding)
         self.bn2d128_1 = nn.BatchNorm2d(128)
-        self.conv128_128 = nn.Conv2d(128, 128, 3, padding='same')
+        self.conv128_128 = nn.Conv2d(128, 128, kernel_size=kernel_size, padding=padding)
         self.bn2d128_2 = nn.BatchNorm2d(128)
-        self.conv128_256 = nn.Conv2d(128, 256, 3, padding='same')
+        self.conv128_256 = nn.Conv2d(128, 256, kernel_size=kernel_size, padding=padding)
         self.bn2d256_1 = nn.BatchNorm2d(256)
-        self.conv256_256 = nn.Conv2d(256, 256, 3, padding='same')
+        self.conv256_256 = nn.Conv2d(256, 256, kernel_size=kernel_size, padding=padding)
         self.bn2d256_2 = nn.BatchNorm2d(256)
 
         self.flatten_nodes = 256 * (height//16) * (width//16)
@@ -205,6 +208,7 @@ class SimpleCNN(PyTorchModelBase):
             model_path = Path(output_dir, 'model.pth')
             torch.save(self.net.state_dict(), model_path)
             self.convert_to_onnx(Path(output_dir, 'model.onnx'))
+            self.convert_to_arm_compute_lib_via_tvm(Path(output_dir, 'arm_compute_library'))
         
         return train_results
     
