@@ -45,9 +45,12 @@ class PyTorchModelBase():
         mod, params = relay.frontend.from_pytorch(traced_model, shape_list)
 
         # --- Compile Relay model with TVM ---
+        #  - https://tvm.apache.org/docs/how_to/deploy/arm_compute_lib.html
         with tvm.transform.PassContext(opt_level=3):
-            lib = relay.build(mod, target='llvm', params=params)
+            target = 'llvm -mtriple=aarch64-linux-gnu -mattr=+neon'
+            lib = relay.build(mod, target=target, params=params)
 
         # --- Export the compiled model to the Arm Compute Library format ---
         lib_path = Path(output_dir, 'model.so')
-        lib.export_library(lib_path)
+        cross_compile = 'aarch64-linux-gnu-gcc'
+        lib.export_library(lib_path, cc=cross_compile)
