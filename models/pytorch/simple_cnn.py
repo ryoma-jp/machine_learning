@@ -5,8 +5,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import torchvision.transforms as transforms
 from torchinfo import summary
 
+from tqdm import tqdm
 from pathlib import Path
 from sklearn.metrics import accuracy_score, classification_report
 from models.pytorch.pytorch_model_base import PyTorchModelBase
@@ -88,7 +90,10 @@ class SimpleCNN(PyTorchModelBase):
         self.output_dir = output_dir
         self.net = Net(net_input_size, num_classes)
         
-        if (pth_path is None):
+        if (pth_path is None) or (not Path(pth_path).exists()):
+            if (not Path(pth_path).exists()):
+                print(f'[WARNING] {pth_path} is not found. Initialize the model with random values.')
+                
             for m in self.net.modules():
                 if isinstance(m, nn.Conv2d):
                     nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
@@ -106,6 +111,14 @@ class SimpleCNN(PyTorchModelBase):
         self.net.to(self.device)
         print(summary(self.net, input_size=input_size))
         
+        # --- Transform ---
+        resize = input_size[2:]
+        self.transform = transforms.Compose([
+            transforms.Resize(resize),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
     def train(self, trainloader, epochs=10, optim_params=None, output_dir=None) -> None:
         """Train the model
         
@@ -216,16 +229,29 @@ class SimpleCNN(PyTorchModelBase):
         self.net.to(self.device)
         predictions = []
         labels = []
+        processing_time = {
+            'preprocessing': 0.0,
+            'inference': 0.0,
+        }
         with torch.no_grad():
-            for data in testloader:
+            for (data, preprocessing_time_) in tqdm(testloader):
                 inputs, labels_ = data
                 inputs, labels_ = inputs.to(self.device), labels_.to(self.device)
                 self.net.eval()
+                start = time.time()
                 outputs = self.net(inputs)
+                inference_time = time.time() - start
                 _, prediction = torch.max(outputs, 1)
                 predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
                 labels.extend(labels_.to('cpu').detach().numpy().tolist().copy())
-        return predictions, labels
+                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
+                processing_time['inference'] += inference_time
+            
+        n_data = len(predictions)
+        processing_time['preprocessing'] /= n_data
+        processing_time['inference'] /= n_data
+        
+        return predictions, labels, processing_time
     
     def evaluate(self, y_true, y_pred) -> dict:
         accuracy = accuracy_score(y_true, y_pred)

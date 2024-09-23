@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import cv2
 import time
+import torchvision
 
 from tqdm import tqdm
 
@@ -18,6 +19,15 @@ from torch.utils.data import Dataset
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+class Cifar10ClassificationDataset(torchvision.datasets.CIFAR10):
+    def __getitem__(self, index):
+        start = time.time()
+        data = super().__getitem__(index)
+        end = time.time()
+        
+        preprocessing_time = end - start
+        return data, preprocessing_time
+    
 class Coco2014ClassificationDataset(Dataset):
     """
     This class is used to create a classification dataset from the COCO 2014 dataset.

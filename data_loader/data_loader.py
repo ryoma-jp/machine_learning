@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from urllib import request
 from utils.utils import extract_tar, extract_zip
-from data_loader.datasets import Coco2014ClassificationDataset, Coco2014Dataset, Coco2017Dataset
+from data_loader.datasets import Cifar10ClassificationDataset, Coco2014ClassificationDataset, Coco2014Dataset, Coco2017Dataset
 
 import torch
 import torchvision
@@ -18,21 +18,12 @@ class _DataLoaderCifar10PyTorch():
     This class provides to load CIFAR-10 dataset for PyTorch.
     """
     def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
-        if (transform is None):
-            transform = transforms.Compose([
-                transforms.Resize(resize),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ])
-        else:
-            transform = transform
-        
-        trainset = torchvision.datasets.CIFAR10(root=dataset_dir, train=True,
+        trainset = Cifar10ClassificationDataset(root=dataset_dir, train=True,
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                 shuffle=shuffle_trainloader, num_workers=2)
 
-        testset = torchvision.datasets.CIFAR10(root=dataset_dir, train=False,
+        testset = Cifar10ClassificationDataset(root=dataset_dir, train=False,
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                                 shuffle=shuffle_testloader, num_workers=2)
