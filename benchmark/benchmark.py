@@ -55,7 +55,7 @@ def load_model(model_name, device, framework, model_path, output_dir):
 
 def predict(device, model, dataloader, output_dir):
     # --- Predict ---
-    predictions, targets, preprocessing_time = model.predict(dataloader.dataset.testloader)
+    predictions, targets, preprocessing_time = model.predict(dataloader.dataset.testloader, save_dir=output_dir)
 
     return predictions, targets, preprocessing_time
 

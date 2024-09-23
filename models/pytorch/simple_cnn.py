@@ -1,6 +1,7 @@
 from typing import Tuple
 import time
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -226,14 +227,21 @@ class SimpleCNN(PyTorchModelBase):
         
         return train_results
     
-    def predict(self, testloader) -> Tuple[np.ndarray, np.ndarray]:
+    def predict(self, testloader, save_dir=None):
         self.net.to(self.device)
+        input_tensor_names = []
         predictions = []
         labels = []
         processing_time = {
             'preprocessing': 0.0,
             'inference': 0.0,
         }
+        
+        if (save_dir is not None):
+            Path(save_dir).mkdir(parents=True, exist_ok=True)
+            input_tensor_dir = Path(save_dir, 'input_tensors')
+            input_tensor_dir.mkdir(parents=True, exist_ok=True)
+            sample_idx = 0
         with torch.no_grad():
             for (data, preprocessing_time_) in tqdm(testloader):
                 inputs, labels_ = data
@@ -243,6 +251,14 @@ class SimpleCNN(PyTorchModelBase):
                 outputs = self.net(inputs)
                 inference_time = time.time() - start
                 _, prediction = torch.max(outputs, 1)
+                
+                if (save_dir is not None):
+                    for input_tensor in inputs:
+                        sample_idx += 1
+                        input_tensor_name = f'input_{sample_idx:08d}.npy'
+                        input_tensor_names.append(input_tensor_name)
+                        if (save_dir is not None):
+                            np.save(Path(input_tensor_dir, input_tensor_name), input_tensor.to('cpu').detach().numpy())
                 predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
                 labels.extend(labels_.to('cpu').detach().numpy().tolist().copy())
                 processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
@@ -251,6 +267,20 @@ class SimpleCNN(PyTorchModelBase):
         n_data = len(predictions)
         processing_time['preprocessing'] /= n_data
         processing_time['inference'] /= n_data
+        
+        if (save_dir is not None):
+            inputs = pd.DataFrame({
+                'input_tensor_names': input_tensor_names,
+                'labels': labels,
+            })
+            inputs.to_csv(Path(input_tensor_dir, 'inputs.csv'), index=False)
+            
+            prediction_results = pd.DataFrame({
+                'input_tensor_names': input_tensor_names,
+                'predictions': predictions,
+                'labels': labels,
+            })
+            prediction_results.to_csv(Path(save_dir, 'prediction_results.csv'), index=False)
         
         return predictions, labels, processing_time
     
