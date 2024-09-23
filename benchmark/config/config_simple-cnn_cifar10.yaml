@@ -1,0 +1,10 @@
+PyTorch_SimpleCNN_CIFAR10:
+  name: "PyTorch_SimpleCNN_CIFAR10"
+  framework: "PyTorch"
+  dataset: "cifar10"
+  dataset_dir: "dataset"
+  output_dir: "outputs/PyTorch_SimpleCNN_CIFAR10"
+  task: "image_classification"
+  model_name: "simple_cnn"
+  model_path: "../notebooks/001_ImageClassification-CIFAR10-SimpleCNN-PyTorch/model/model.pth"
+
