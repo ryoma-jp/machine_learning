@@ -91,7 +91,8 @@ class SimpleCNN(PyTorchModelBase):
         self.net = Net(net_input_size, num_classes)
         
         if (pth_path is None) or (not Path(pth_path).exists()):
-            if (not Path(pth_path).exists()):
+            if (pth_path is not None):
+                # --- pth_path is not None but not found ---
                 print(f'[WARNING] {pth_path} is not found. Initialize the model with random values.')
                 
             for m in self.net.modules():
@@ -183,7 +184,7 @@ class SimpleCNN(PyTorchModelBase):
         
         # --- Caluculate first loss ---
         running_loss = 0.0
-        for data in trainloader:
+        for (data, preprocessing_time_) in tqdm(trainloader):
             inputs, labels = data
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             outputs = self.net(inputs)
@@ -198,7 +199,7 @@ class SimpleCNN(PyTorchModelBase):
         train_start = time.time()
         for epoch in range(epochs):
             running_loss = 0.0
-            for data in trainloader:
+            for (data, preprocessing_time_) in tqdm(trainloader):
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 
