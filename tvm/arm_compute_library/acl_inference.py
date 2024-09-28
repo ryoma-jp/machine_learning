@@ -7,6 +7,41 @@ from pathlib import Path
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
+class BenchmarkResult():
+    def __init__(self):
+        self.bencmark_item = {
+            'model': None,
+            'dataset': None,
+            'task': None,
+            'accuracy': None,
+            'precision': None,
+            'recall': None,
+            'f1': None,
+            'AP50': None,
+            'AP75': None,
+            'framework': None,
+            'framerate': None,
+        }
+        self.benchmark_results = []
+    
+    def register_item(self, model=None, dataset=None, task=None,
+                        accuracy=None, precision=None, recall=None, f1=None,
+                        AP50=None, AP75=None, framework=None, framerate=None):
+        add_item = self.bencmark_item.copy()
+        add_item['model'] = model
+        add_item['dataset'] = dataset
+        add_item['task'] = task
+        add_item['accuracy'] = accuracy
+        add_item['precision'] = precision
+        add_item['recall'] = recall
+        add_item['f1'] = f1
+        add_item['AP50'] = AP50
+        add_item['AP75'] = AP75
+        add_item['framework'] = framework
+        add_item['framerate'] = framerate
+        
+        self.benchmark_results.append(add_item)
+
 def main():
     # --- Load the model ---
     dev = tvm.cpu(0)
@@ -19,6 +54,7 @@ def main():
     print(df_input)
     
     # --- Inference ---
+    benchmark_result = BenchmarkResult()
     data_shape = (1, 3, 32, 32)
     predictions = []
     processing_time = 0
@@ -40,19 +76,20 @@ def main():
     accuracy = accuracy_score(df_input['labels'], predictions)
     
     # --- Save Results ---
-    result = [{
-        'model': 'TVM-ACL_SimpleCNN_CIFAR10',
-        'dataset': 'cifar10',
-        'task': 'image_classification',
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-        'framework': 'TVM (Arm Compute Library)',
-        'framerate': 1.0 / average_processing_time,
-    }]
-    pd.DataFrame(result).to_csv('result.csv', index=False)
-    print(pd.DataFrame(result))
+    benchmark_result.register_item(
+        model='TVM-ACL_SimpleCNN_CIFAR10',
+        dataset='cifar10',
+        task='image_classification',
+        accuracy=accuracy,
+        precision=precision,
+        recall=recall,
+        f1=f1,
+        framework='TVM (Arm Compute Library)',
+        framerate=1.0 / average_processing_time,
+    )
+    pd.DataFrame(benchmark_result.benchmark_results).to_csv('result.csv', index=False)
+    pd.DataFrame(benchmark_result.benchmark_results).to_markdown('result.md', index=False)
+    print(pd.DataFrame(benchmark_result.benchmark_results))
 
 if __name__ == '__main__':
     main()
