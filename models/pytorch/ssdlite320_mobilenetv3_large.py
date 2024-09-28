@@ -38,7 +38,7 @@ class SSDLite320MobileNetv3Large(PyTorchModelBase):
             transforms.ToTensor(),
         ])
         
-    def predict(self, testloader, score_th=0.5):
+    def predict(self, testloader, score_th=0.5, save_dir=None):
         predictions = []
         targets = []
         processing_time = {

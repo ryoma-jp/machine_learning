@@ -91,13 +91,48 @@ def coco_evaluate(predictions, dataset_dir, dataset_name):
     
     return cocoEval
 
+class BenchmarkResult():
+    def __init__(self):
+        self.bencmark_item = {
+            'model': None,
+            'dataset': None,
+            'task': None,
+            'accuracy': None,
+            'precision': None,
+            'recall': None,
+            'f1': None,
+            'AP50': None,
+            'AP75': None,
+            'framework': None,
+            'framerate': None,
+        }
+        self.benchmark_results = []
+    
+    def register_item(self, model=None, dataset=None, task=None,
+                        accuracy=None, precision=None, recall=None, f1=None,
+                        AP50=None, AP75=None, framework=None, framerate=None):
+        add_item = self.bencmark_item.copy()
+        add_item['model'] = model
+        add_item['dataset'] = dataset
+        add_item['task'] = task
+        add_item['accuracy'] = accuracy
+        add_item['precision'] = precision
+        add_item['recall'] = recall
+        add_item['f1'] = f1
+        add_item['AP50'] = AP50
+        add_item['AP75'] = AP75
+        add_item['framework'] = framework
+        add_item['framerate'] = framerate
+        
+        self.benchmark_results.append(add_item)
+
 def benchmark(args, device):
     # --- Load YAML configuration file ---
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     
     # --- Run Benchmark ---
-    benchmark_results = []
+    benchmark_result = BenchmarkResult()
     for benchmark in config:
         print(benchmark)
         
@@ -131,17 +166,10 @@ def benchmark(args, device):
             accuracy = accuracy_score(targets, predictions)
             
             # --- Save Results ---
-            benchmark_results.append({
-                'model': model_name,
-                'dataset': dataset_name,
-                'task': task,
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1': f1,
-                'framework': framework,
-                'framerate': 1.0 / processing_time['inference'],
-            })
+            benchmark_result.register_item(model=model_name, dataset=dataset_name, task=task,
+                                            accuracy=accuracy, precision=precision, recall=recall, f1=f1,
+                                            framework=framework, framerate=1.0 / processing_time['inference'])
+            
         else: # task == 'object_detection'
             for prediction, target in zip(predictions, targets):
                 prediction['image_id'] = target['image_id']
@@ -155,18 +183,14 @@ def benchmark(args, device):
             cocoEval = coco_evaluate(predictions, dataset_dir, dataset_name)
 
             # --- Save Results ---
-            benchmark_results.append({
-                'model': model_name,
-                'dataset': dataset_name,
-                'task': task,
-                'framework': framework,
-                'AP50': cocoEval.stats[1],
-                'AP75': cocoEval.stats[2],
-                'framerate': 1.0 / processing_time['inference'],
-            })
+            benchmark_result.register_item(model=model_name, dataset=dataset_name, task=task,
+                                            AP50=cocoEval.stats[1], AP75=cocoEval.stats[2],
+                                            framework=framework, framerate=1.0 / processing_time['inference'])
     
-    pd.DataFrame(benchmark_results).to_csv('benchmark_results.csv', index=False)
-    print(pd.DataFrame(benchmark_results))
+    pd.DataFrame(benchmark_result.benchmark_results).to_csv('benchmark_results.csv', index=False)
+    pd.DataFrame(benchmark_result.benchmark_results).to_markdown('benchmark_results.md', index=False)
+    
+    print(pd.DataFrame(benchmark_result.benchmark_results))
     
 def main():
     # --- Parse arguments ---

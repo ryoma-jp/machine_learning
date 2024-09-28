@@ -165,7 +165,7 @@ class MobileNetSSD(PyTorchModelBase):
                                     config.size_variance, 0.5)
         self.test_transform = TestTransform(config.image_size, config.image_mean, config.image_std)        
         
-    def predict(self, testloader, score_th=0.5):
+    def predict(self, testloader, score_th=0.5, save_dir=None):
         predictions = []
         targets = []
         processing_time = {
