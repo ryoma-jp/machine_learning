@@ -27,8 +27,11 @@ $ pip install -r requirements.txt
 ```
 
 ## Run
+
+modify the config file and run the script.
+
 ```
 $ ls
-README.md  acl_inference.py  arm_compute_library  requirements.txt  venv
+README.md  acl_inference.py  config  input_tensors  models  requirements.txt  venv
 $ python3 acl_inference.py
 ```
