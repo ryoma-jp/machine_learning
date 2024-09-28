@@ -1,0 +1,9 @@
+TVM-ACL_SimpleCNN_CIFAR10:
+  name: "TVM-ACL_SimpleCNN_CIFAR10"
+  framework: "TVM (Arm Compute Library)"
+  dataset: "cifar10"
+  dataset_dir: "input_tensors/SimpleCNN_CIFAR10"
+  output_dir: "outputs/TVM-ACL_SimpleCNN_CIFAR10"
+  task: "image_classification"
+  model_name: "simple_cnn"
+  model_path: "models/SimpleCNN.so"
