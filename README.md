@@ -63,3 +63,60 @@ Explainable methods to show the reason where the model looked when inference.
 |[Parameter Space Saliency Maps](./explainable_ai/pytorch/pss.py)| Identify and analyze the network parameters,  which are responsible for erroneous decisions.|[parameter-space-saliency](https://github.com/LevinRoman/parameter-space-saliency/tree/0e3b3d69c6e222aee6af0264d7ce3ddc6d19744e)|
 
 ### Domain Adaptation
+
+### Build TVM
+
+#### For ARM Compute Library
+
+T.B.D
+
+```
+https://tvm.apache.org/docs/how_to/deploy/arm_compute_lib.html
+https://tvm.apache.org/docs/install/from_source.html
+https://tvm.apache.org/docs/how_to/tutorials/cross_compilation_and_rpc.html
+
+export LD_LIBRARY_PATH=/home/ryoichi/work/github/machine_learning/external/lib/arm_compute-v24.09-linux-aarch64-cpu-bin/lib/:$LD_LIBRARY_PATH
+
+export PATH=/home/ryoichi/work/github/machine_learning/external/lib/arm_compute-v24.09-linux-aarch64-cpu-bin/bin/:$PATH
+
+LD_LIBRARY_PATH=/home/ryoichi/work/github/machine_learning/external/lib/arm_compute-v24.09-linux-aarch64-cpu-bin/lib/:$LD_LIBRARY_PATH cmake --build . --parallel 4
+```
+
+#### For Raspberry Pi AI HAT+
+
+##### Setup
+
+see [Getting Started](https://www.raspberrypi.com/documentation/computers/ai.html)
+
+##### Demos
+
+use `/user/share/rpicam-camera-assets/*.json` instead of `~/rpicam-apps/assets/*.json`
+
+###### Object Detection
+
+```rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov6_inference.json --lores-width 640 --lores-height 640
+```
+
+```
+rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov8_inference.json --lores-width 640 --lores-height 640
+```
+
+```
+rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolox_inference.json --lores-width 640 --lores-height 640
+```
+
+```
+rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov5_personface.json --lores-width 640 --lores-height 640
+```
+
+###### Image Detection
+
+```
+rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov5_segmentation.json --lores-width 640 --lores-height 640 --framerate 20
+```
+
+###### Pose Estimation
+
+```
+rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov8_pose.json --lores-width 640 --lores-height 640
+```
