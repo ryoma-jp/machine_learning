@@ -84,39 +84,5 @@ LD_LIBRARY_PATH=/home/ryoichi/work/github/machine_learning/external/lib/arm_comp
 
 #### For Raspberry Pi AI HAT+
 
-##### Setup
+see [Raspberry Pi AI HAT+](./benchmark/rpi_ai_hat/README.md)
 
-see [Getting Started](https://www.raspberrypi.com/documentation/computers/ai.html)
-
-##### Demos
-
-use `/user/share/rpicam-camera-assets/*.json` instead of `~/rpicam-apps/assets/*.json`
-
-###### Object Detection
-
-```rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov6_inference.json --lores-width 640 --lores-height 640
-```
-
-```
-rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov8_inference.json --lores-width 640 --lores-height 640
-```
-
-```
-rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolox_inference.json --lores-width 640 --lores-height 640
-```
-
-```
-rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov5_personface.json --lores-width 640 --lores-height 640
-```
-
-###### Image Detection
-
-```
-rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov5_segmentation.json --lores-width 640 --lores-height 640 --framerate 20
-```
-
-###### Pose Estimation
-
-```
-rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yolov8_pose.json --lores-width 640 --lores-height 640
-```
