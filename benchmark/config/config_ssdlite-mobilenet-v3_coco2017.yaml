@@ -1,0 +1,9 @@
+PyTorch_SSDLite320_MobileNetv3_Large_COCO2017:
+  name: "PyTorch_SSDLite320_MobileNetv3_Large_COCO2017"
+  framework: "PyTorch"
+  dataset: "coco2017"
+  dataset_dir: "dataset"
+  output_dir: "outputs/PyTorch_SSDLite320_MobileNetv3_Large_COCO2017"
+  task: "object_detection"
+  model_name: "ssdlite320_mobilenet_v3_large"
+  model_path: ""
