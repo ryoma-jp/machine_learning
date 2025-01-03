@@ -38,6 +38,7 @@ Supported dataset is below.
 |[CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html)|Image Classification|Unknown (Not specified)|
 |[Food-101](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/)|Image Classification|Unknown (Not specified)|
 |[Office-Home Dataset](https://www.hemanthdv.org/officeHomeDataset.html)|Domain Adaptaion|Custom (non-commercial research and educational purposes). See [Fair Use Notice](https://www.hemanthdv.org/officeHomeDataset.html)|
+|[The Human Activity Recognition Trondheim](https://archive.ics.uci.edu/dataset/779/harth)|Activity Classification|CC BY 4.0|
 
 ### References
 
@@ -63,6 +64,12 @@ Explainable methods to show the reason where the model looked when inference.
 |[Parameter Space Saliency Maps](./explainable_ai/pytorch/pss.py)| Identify and analyze the network parameters,  which are responsible for erroneous decisions.|[parameter-space-saliency](https://github.com/LevinRoman/parameter-space-saliency/tree/0e3b3d69c6e222aee6af0264d7ce3ddc6d19744e)|
 
 ### Domain Adaptation
+
+### The Human Activity Recognition Trondheim (T.B.D)
+
+|Name|Framework|Description|
+|---|---|---|
+|[LightGBM](./models/lightgbm/lgbm_classification.py)|LightGBM|The Human Activity Recognition Trondheim|
 
 ### Build TVM
 
