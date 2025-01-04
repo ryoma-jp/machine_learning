@@ -18,8 +18,8 @@ Please modify the parameters in `make_env.sh` file.
 
 ```bash
 cd /path/to/machine-learning
-./make_env.sh
-docker-compose up --build -d
+./scripts/make_env.sh
+./scripts/compose_up.sh
 ```
 
 #### Login to the development environment
