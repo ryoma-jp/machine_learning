@@ -20,7 +20,33 @@ services:
         source: .
         target: /workspace
     ports:
-      - ${port}:8888
+      - ${ML_PORT}:8888
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  benchmark:
+    build:
+      context: .
+      dockerfile: benchmark/docker/Dockerfile
+      args:
+        USER_ID: ${UID}
+        GROUP_ID: ${GID}
+        USER_NAME: ${UNAME}
+    shm_size: '2gb'
+    tty: true
+    stdin_open: true
+    environment:
+      - PYTHONPATH=/workspace
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+    user: "${UID}:${GID}"
     deploy:
       resources:
         reservations:

@@ -5,18 +5,33 @@ This repository is implemented machine learning program samples.
 ## Environment
 
 Docker compose is used.  
-Please modify the parameters in `.env` file.
+Please modify the parameters in `make_env.sh` file.
 
 |parameter|description|
 |---|---|
-|port|TCP/IP port of host PC. Default is 35000.|
+|UID|User ID of host PC. Default is the ID of the login user.|
+|GID|Group ID of host PC. Default is the ID of the login user.|
+|UNAME|User name of host PC. Default is "ml_dev".|
+|ML_PORT|TCP/IP port of host PC. Default is 35000.|
 
 ### Build Docker Image and Run Docker Container
 
 ```bash
-$ docker-compose build
-$ docker-compose up -d
-$ docker-compose exec ml bash
+cd /path/to/machine-learning
+./make_env.sh
+docker-compose up --build -d
+```
+
+#### Login to the development environment
+
+```bash
+docker-compose exec ml bash
+```
+
+#### Login to the benchmark environment
+
+```bash
+docker-compose exec benchmark bash
 ```
 
 ### Jupyter Notebook
