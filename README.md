@@ -43,6 +43,18 @@ You can check the token by running below command.
 docker-compose logs ml
 ```
 
+### Training YOLO
+
+```bash
+docker-compose exec yolox bash
+cd external/yolox
+git clone https://github.com/Megvii-BaseDetection/YOLOX.git
+cd YOLOX
+mkdir weights
+wget -P ./weights https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.pth
+python -m yolox.tools.train -f exps/default/yolox_nano.py -c ./weights/yolox_nano.pth -d 1 -b 8 --fp16 -o
+```
+
 ## Dataset
 
 Open Dataset is used.  

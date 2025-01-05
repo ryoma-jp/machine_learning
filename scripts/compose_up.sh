@@ -1,6 +1,6 @@
 #! /bin/bash
 
-SERVICES="ml benchmark"
+SERVICES="ml benchmark yolox"
 
 HAILO_WHL1="compiler/hailo/docker/whl/hailo_dataflow_compiler-3.29.0-py3-none-linux_x86_64.whl"
 HAILO_WHL2="compiler/hailo/docker/whl/hailo_model_zoo-2.13.0-py3-none-any.whl"
