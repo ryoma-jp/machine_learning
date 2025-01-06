@@ -7,7 +7,7 @@ RUN apt update && apt install -y software-properties-common
 RUN add-apt-repository ppa:deadsnakes/ppa && apt update && apt install -y python3.10 python3.10-distutils python3-pip python3.10-dev
 
 # Install necessary packages
-RUN apt update && apt install -y graphviz-dev git libgl1 vim cmake sudo
+RUN apt update && apt install -y graphviz-dev git libgl1 vim cmake sudo wget unzip
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 

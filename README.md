@@ -55,6 +55,18 @@ wget -P ./weights https://github.com/Megvii-BaseDetection/YOLOX/releases/downloa
 python -m yolox.tools.train -f exps/default/yolox_nano.py -c ./weights/yolox_nano.pth -d 1 -b 8 --fp16 -o
 ```
 
+### Compile YOLOX for Hailo8
+
+```bash
+docker-compose exec hailo_compiler bash
+cd compiler/hailo
+wget -P weights/ https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ObjectDetection/Detection-COCO/yolo/yolox/yolox_tiny/pretrained/2023-05-31/yolox_tiny.zip
+cd weights
+unzip -q yolox_tiny.zip
+cd ..
+hailomz compile --ckpt weights/yolox_tiny.onnx --calib-path /dataset/coco2017/val2017/ --yaml /tmp/hailo_model_zoo/hailo_model_zoo/cfg/networks/yolox_tiny.yaml --model-script cfg/alls/yolox_tiny.alls
+```
+
 ## Dataset
 
 Open Dataset is used.  
