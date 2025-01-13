@@ -1,1 +1,2 @@
 torchinfo==1.8.0
+onnxruntime==1.20.1

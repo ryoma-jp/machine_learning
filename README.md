@@ -51,20 +51,60 @@ cd external/yolox
 git clone https://github.com/Megvii-BaseDetection/YOLOX.git
 cd YOLOX
 mkdir weights
-wget -P ./weights https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.pth
+```
+
+#### YOLOX-Tiny
+
+```bash
+wget -P ./weights https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.0/yolox_tiny.pth
+python -m yolox.tools.train -f exps/default/yolox_tiny.py -c ./weights/yolox_tiny.pth -d 1 -b 8 --fp16 -o
+python tools/export_onnx.py --output-name weights/yolox_tiny.onnx -n yolox-tiny -c weights/yolox_tiny.pth
+```
+
+#### YOLOX-Nano
+
+```bash
+wget -P ./weights https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.0/yolox_nano.pth
 python -m yolox.tools.train -f exps/default/yolox_nano.py -c ./weights/yolox_nano.pth -d 1 -b 8 --fp16 -o
+python tools/export_onnx.py --output-name weights/yolox_nano.onnx -n yolox-nano -c weights/yolox_nano.pth
+```
+
+### Evaluation YOLO
+
+#### YOLOX-Tiny
+
+```bash
+python -m yolox.tools.eval -f exps/default/yolox_tiny.py -c ./weights/yolox_tiny.pth -b 1 -d 1 --conf 0.001 --fp16 --fuse
+```
+
+#### YOLOX-Nano
+
+```bash
+python -m yolox.tools.eval -f exps/default/yolox_nano.py -c ./weights/yolox_nano.pth -b 1 -d 1 --conf 0.001 --fp16 --fuse
 ```
 
 ### Compile YOLOX for Hailo8
 
+#### YOLOX-Tiny
+
 ```bash
 docker-compose exec hailo_compiler bash
 cd compiler/hailo
-wget -P weights/ https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ObjectDetection/Detection-COCO/yolo/yolox/yolox_tiny/pretrained/2023-05-31/yolox_tiny.zip
-cd weights
-unzip -q yolox_tiny.zip
-cd ..
-hailomz compile --ckpt weights/yolox_tiny.onnx --calib-path /dataset/coco2017/val2017/ --yaml /tmp/hailo_model_zoo/hailo_model_zoo/cfg/networks/yolox_tiny.yaml --model-script cfg/alls/yolox_tiny.alls
+ln -s /workspace/external/yolox/YOLOX/YOLOX_outputs/yolox_tiny/yolox_tiny.onnx weights/yolox_tiny.onnx
+hailomz compile --ckpt weights/yolox_tiny.onnx --calib-path /dataset/coco2017/val2017/ --yaml cfg/networks/yolox_tiny.yaml --model-script cfg/alls/yolox_tiny.alls
+```
+
+#### YOLOX-Nano
+
+notes: 
+YOLOX-Nano is not working on Hailo8.  
+Nothing is detected for unknown reasons.
+
+```bash
+docker-compose exec hailo_compiler bash
+cd compiler/hailo
+ln -s /workspace/external/yolox/YOLOX/YOLOX_outputs/yolox_nano/yolox_nano.onnx weights/yolox_nano.onnx
+hailomz compile --ckpt weights/yolox_nano.onnx --calib-path /dataset/coco2017/val2017/ --yaml cfg/networks/yolox_nano.yaml --model-script cfg/alls/yolox_nano.alls
 ```
 
 ## Dataset

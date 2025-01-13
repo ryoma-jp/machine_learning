@@ -1,0 +1,34 @@
+{
+    "nms_scores_th": 0.01,
+    "nms_iou_th": 0.45,
+    "number_of_detection_heads": 3, 
+    "image_dims": [
+        416,
+        416
+    ],
+    "max_proposals_per_class": 100,
+    "classes": 80,
+    "bbox_decoders": [
+        {
+            "name": "yolox_tiny/bbox_decoder8",
+            "stride": 8,
+            "reg_layer": "yolox_tiny/conv56",
+            "objectness_layer": "yolox_tiny/conv55",
+            "cls_layer": "yolox_tiny/conv54"
+        },
+        {
+            "name": "yolox_tiny/bbox_decoder16",
+            "stride": 16,
+            "reg_layer": "yolox_tiny/conv70",
+            "objectness_layer": "yolox_tiny/conv69",
+            "cls_layer": "yolox_tiny/conv68"
+        },
+        {
+            "name": "yolox_tiny/bbox_decoder32",
+            "stride": 32,
+            "reg_layer": "yolox_tiny/conv83",
+            "objectness_layer": "yolox_tiny/conv82",
+            "cls_layer": "yolox_tiny/conv81"
+        }
+    ]
+}

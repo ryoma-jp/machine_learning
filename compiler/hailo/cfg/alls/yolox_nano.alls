@@ -1,0 +1,1 @@
+nms_postprocess("../nms/nms_config_yolox_nano.json", yolox, engine=cpu)

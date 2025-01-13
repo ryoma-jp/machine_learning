@@ -42,3 +42,6 @@ rpicam-hello -t 0 --post-process-file /user/share/rpicam-camera-assets/hailo_yol
 
 [How to Set Up Raspberry Pi 5 and Hailo](https://github.com/hailo-ai/hailo-rpi5-examples/blob/main/doc/install-raspberry-pi5.md#how-to-set-up-raspberry-pi-5-and-hailo-8l)
 
+## References
+
+* [Tutorial of AI Kit with Raspberry Pi 5 about YOLOv8n object detection](https://wiki.seeedstudio.com/tutorial_of_ai_kit_with_raspberrypi5_about_yolov8n_object_detection/)
