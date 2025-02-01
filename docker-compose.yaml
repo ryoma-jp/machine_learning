@@ -109,3 +109,30 @@ services:
           - driver: nvidia
             device_ids: ['0']
             capabilities: [gpu]
+
+  rpi_ai_hat:
+    build:
+      context: "./edge_ai/rpi_ai_hat/docker"
+      dockerfile: "Dockerfile"
+    shm_size: '2g'
+    tty: true
+    stdin_open: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - HOME=${HOME}
+    privileged: true
+    volumes:
+      - type: bind
+        source: "${PWD}"
+        target: "${PWD}"
+        read_only: false
+      - type: bind
+        source: "/tmp/.X11-unix"
+        target: "/tmp/.X11-unix"
+        read_only: false
+      - type: bind
+        source: "/run/udev"
+        target: "/run/udev"
+        read_only: true
+    working_dir: "${PWD}"
+
