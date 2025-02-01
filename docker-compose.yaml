@@ -109,3 +109,22 @@ services:
           - driver: nvidia
             device_ids: ['0']
             capabilities: [gpu]
+
+  rpi_ai_hat:
+    build:
+      context: "./edge_ai/rpi_ai_hat/docker"
+      dockerfile: "Dockerfile"
+      args:
+        USER_ID: ${UID}
+        GROUP_ID: ${GID}
+        USER_NAME: ${UNAME}
+    shm_size: '2g'
+    tty: true
+    stdin_open: true
+    volumes:
+      - type: bind
+        source: "."
+        target: "/workspace"
+    working_dir: "/workspace"
+    user: "${UID}:${GID}"
+
