@@ -114,17 +114,25 @@ services:
     build:
       context: "./edge_ai/rpi_ai_hat/docker"
       dockerfile: "Dockerfile"
-      args:
-        USER_ID: ${UID}
-        GROUP_ID: ${GID}
-        USER_NAME: ${UNAME}
     shm_size: '2g'
     tty: true
     stdin_open: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - HOME=${HOME}
+    privileged: true
     volumes:
       - type: bind
-        source: "."
-        target: "/workspace"
-    working_dir: "/workspace"
-    user: "${UID}:${GID}"
+        source: "${PWD}"
+        target: "${PWD}"
+        read_only: false
+      - type: bind
+        source: "/tmp/.X11-unix"
+        target: "/tmp/.X11-unix"
+        read_only: false
+      - type: bind
+        source: "/run/udev"
+        target: "/run/udev"
+        read_only: true
+    working_dir: "${PWD}"
 

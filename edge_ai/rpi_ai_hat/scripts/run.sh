@@ -24,4 +24,4 @@ else
     wget https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ModelZoo/Compiled/v2.13.0/hailo8l/${MODEL} -P $MODEL_DIR
 fi
 
-python3 02_inference-camera-image/inference-camera-image.py --hef $MODEL_DIR$MODEL
+python3 src/inference-camera-image.py --hef $MODEL_DIR$MODEL
