@@ -32,4 +32,12 @@ RUN cd /tmp && \
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --break-system-packages --no-cache-dir -r /tmp/requirements.txt
 
+ARG USER_ID
+ARG GROUP_ID
+ARG USER_NAME
+RUN groupadd -g ${GROUP_ID} ${USER_NAME} && \
+        useradd -m -u ${USER_ID} -g ${GROUP_ID} -G video ${USER_NAME}
+
+USER ${USER_NAME}
+
 ENTRYPOINT ["/bin/bash"]
