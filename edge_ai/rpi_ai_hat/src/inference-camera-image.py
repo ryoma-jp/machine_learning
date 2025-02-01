@@ -17,10 +17,10 @@ from hailo_platform import (HEF, ConfigureParams, FormatType, HailoSchedulingAlg
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
-from utils import time_function
-from perform_inference_yolo_det import perform_inference_yolo_det
-from perform_inference_yolov8_seg import perform_inference_yolov8_seg
-from perform_inference_deeplab_v3 import perform_inference_deeplab_v3
+from common.utils import time_function
+from inference.perform_inference_yolo_det import perform_inference_yolo_det
+from inference.perform_inference_yolov8_seg import perform_inference_yolov8_seg
+from inference.perform_inference_deeplab_v3 import perform_inference_deeplab_v3
 
 @time_function
 def load_model(model_path):

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import time
 from PIL import Image
-from utils import time_function
+from common.utils import time_function
 
 # Dictionary to store fixed colors for each class
 CLASS_COLORS = {}
