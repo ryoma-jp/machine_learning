@@ -1,4 +1,3 @@
-
 import os
 import sys
 import subprocess
@@ -44,7 +43,7 @@ class Coco2014ClassificationDataset(Dataset):
     __len__(): Returns the number of samples in the dataset.
     __getitem__(index): Returns a sample from the dataset at the specified index.
     """
-    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+    def __init__(self, root, input_size=(224, 224), download=False, train=True, transform=None):
         def extract_object(x, df_images, src_dir, dst_dir, threshold=224):
             bbox = np.array(x['bbox'], dtype=int)
             image_id = x['image_id']
@@ -152,7 +151,7 @@ class Coco2014ClassificationDataset(Dataset):
     def __getitem__(self, index):
         image_path = self.df_dataset['input_file'].to_list()[index]
         image = Image.open(image_path)
-        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = image.resize(self.input_size, Image.Resampling.BILINEAR)
         image = np.array(image, dtype=np.float32)
         
         if (self.transform is not None):
@@ -180,7 +179,7 @@ class Coco2014Dataset(Dataset):
     __len__(): Returns the number of samples in the dataset.
     __getitem__(index): Returns a sample from the dataset at the specified index.
     """
-    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+    def __init__(self, root, input_size=(224, 224), download=False, train=True, transform=None):
         def _get_category_name(x, df_categories):
             category_name = df_categories[df_categories['id']==x['category_id']].iloc[0]['name']
             supercategory = df_categories[df_categories['id']==x['category_id']].iloc[0]['supercategory']
@@ -281,7 +280,7 @@ class Coco2014Dataset(Dataset):
             image = image.convert('RGB')
         
         # --- Resize Image ---
-        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = image.resize(self.input_size, Image.Resampling.BILINEAR)
         image = np.array(image, dtype=np.float32) / 255.0
         
         # --- Transform ---
@@ -329,7 +328,7 @@ class Coco2017Dataset(Dataset):
     __len__(): Returns the number of samples in the dataset.
     __getitem__(index): Returns a sample from the dataset at the specified index.
     """
-    def __init__(self, root, input_size=224, download=False, train=True, transform=None):
+    def __init__(self, root, input_size=(224, 224), download=False, train=True, transform=None):
         def _get_category_name(x, df_categories):
             category_name = df_categories[df_categories['id']==x['category_id']].iloc[0]['name']
             supercategory = df_categories[df_categories['id']==x['category_id']].iloc[0]['supercategory']
@@ -429,7 +428,7 @@ class Coco2017Dataset(Dataset):
             image = image.convert('RGB')
         
         # --- Resize Image ---
-        image = image.resize((self.input_size, self.input_size), Image.Resampling.BILINEAR)
+        image = image.resize(self.input_size, Image.Resampling.BILINEAR)
         image = np.array(image, dtype=np.float32) / 255.0
         
         # --- Transform ---

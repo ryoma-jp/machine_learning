@@ -193,14 +193,14 @@ class _DataLoaderCoco2014PyTorch():
             transform = transform
         
         trainset = Coco2014Dataset(root=dataset_dir, train=True,
-                                                input_size=resize[0],
+                                                input_size=resize,
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                 shuffle=shuffle_trainloader,
                                                 collate_fn=collate_fn, num_workers=8)
 
         testset = Coco2014Dataset(root=dataset_dir, train=False,
-                                            input_size=resize[0],
+                                            input_size=resize,
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                                 shuffle=shuffle_testloader,
@@ -261,14 +261,14 @@ class _DataLoaderCoco2017PyTorch():
             transform = transform
         
         trainset = Coco2017Dataset(root=dataset_dir, train=True,
-                                                input_size=resize[0],
+                                                input_size=resize,
                                                 download=True, transform=transform)
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                 shuffle=shuffle_trainloader,
                                                 collate_fn=collate_fn, num_workers=8)
 
         testset = Coco2017Dataset(root=dataset_dir, train=False,
-                                            input_size=resize[0],
+                                            input_size=resize,
                                             download=True, transform=transform)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                                 shuffle=shuffle_testloader,
