@@ -19,19 +19,36 @@ Please modify the parameters in `make_env.sh` file.
 ```bash
 cd /path/to/machine-learning
 ./scripts/make_env.sh
-./scripts/compose_up.sh
+```
+
+#### On PC
+
+```bash
+./scripts/compose_up.sh -d PC
+```
+
+#### On Raspberry Pi
+
+```bash 
+./scripts/compose_up.sh -d RaspberryPi
 ```
 
 #### Login to the development environment
 
 ```bash
-docker-compose exec ml bash
+docker compose exec ml bash
 ```
 
 #### Login to the benchmark environment
 
 ```bash
-docker-compose exec benchmark bash
+docker compose exec benchmark bash
+```
+
+#### Login to the Raspberry Pi AI HAT+ environment
+
+```bash
+docker compose exec rpi_ai_hat bash
 ```
 
 ### Jupyter Notebook
@@ -40,13 +57,13 @@ Access to `http://localhost:35000` with browser.
 You can check the token by running below command.
 
 ```bash
-docker-compose logs ml
+docker compose logs ml
 ```
 
 ### Training YOLO
 
 ```bash
-docker-compose exec yolox bash
+docker compose exec yolox bash
 cd external/yolox
 git clone https://github.com/Megvii-BaseDetection/YOLOX.git
 cd YOLOX
@@ -88,7 +105,7 @@ python -m yolox.tools.eval -f exps/default/yolox_nano.py -c ./weights/yolox_nano
 #### YOLOX-Tiny
 
 ```bash
-docker-compose exec hailo_compiler bash
+docker compose exec hailo_compiler bash
 cd compiler/hailo
 ln -s /workspace/external/yolox/YOLOX/YOLOX_outputs/yolox_tiny/yolox_tiny.onnx weights/yolox_tiny.onnx
 hailomz compile --ckpt weights/yolox_tiny.onnx --calib-path /dataset/coco2017/val2017/ --yaml cfg/networks/yolox_tiny.yaml --model-script cfg/alls/yolox_tiny.alls
@@ -101,7 +118,7 @@ YOLOX-Nano is not working on Hailo8.
 Nothing is detected for unknown reasons.
 
 ```bash
-docker-compose exec hailo_compiler bash
+docker compose exec hailo_compiler bash
 cd compiler/hailo
 ln -s /workspace/external/yolox/YOLOX/YOLOX_outputs/yolox_nano/yolox_nano.onnx weights/yolox_nano.onnx
 hailomz compile --ckpt weights/yolox_nano.onnx --calib-path /dataset/coco2017/val2017/ --yaml cfg/networks/yolox_nano.yaml --model-script cfg/alls/yolox_nano.alls
