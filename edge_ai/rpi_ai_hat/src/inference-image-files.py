@@ -9,6 +9,7 @@ import cv2
 import tkinter as tk
 import time
 import torchvision.transforms as transforms
+from tqdm import tqdm
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 from picamera2 import Picamera2
 from hailo_platform import (HEF, ConfigureParams, FormatType, HailoSchedulingAlgorithm, HailoStreamInterface,
@@ -71,21 +72,27 @@ def main():
     parser = argparse.ArgumentParser(description="Image files inference")
     parser.add_argument('--hef', type=str, required=True, help='Path to the Hailo8L model file')
     parser.add_argument('--image_dir', type=str, required=True, help='Path to the directory containing images')
+    parser.add_argument('--output_dir', type=str, required=True, help='Path to the directory to save output images')
     args = parser.parse_args()
+    
+    # Create output directory if it does not exist
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
     
     hef = load_model(args.hef)  # Load the model with the provided path
     hef_name = args.hef.split("/")[-1]
+    height, width, _ = hef.get_input_vstream_infos()[0].shape
+    input_shape = (height, width)
+    print(f"Input shape: {height}x{width}")
     
     # Data Loader
     batch_size = 1
     transform = transforms.Compose([
-        PaddingImageTransform((320, 320)),
+        PaddingImageTransform((height, width)),
         transforms.ToTensor()
     ])
-    dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=args.image_dir, resize=(320, 320), transform=transform, batch_size=batch_size)
+    dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=args.image_dir, resize=(height, width), transform=transform, batch_size=batch_size)
 
-    assert "Debug"
-    
     # Configure network groups
     start_time = time.time()
     params = VDevice.create_params()
@@ -108,26 +115,22 @@ def main():
     output_vstreams_params = OutputVStreamParams.make(network_group, quantized=output_quantized,
                                                     format_type=FormatType.FLOAT32)
     
-    height, width, _ = hef.get_input_vstream_infos()[0].shape
-    input_shape = (height, width)
-    print(f"Input shape: {height}x{width}")
-    
     input_vstream_info = hef.get_input_vstream_infos()[0]
     output_vstream_info = hef.get_output_vstream_infos()[0]
     print(f"Stream parameters setup executed in {time.time() - start_time:.4f} seconds")
     with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
         with network_group.activate(network_group_params):
-            image_files = [os.path.join(args.image_dir, f) for f in os.listdir(args.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
-            for image_file in image_files:
+            test_dir = os.path.join(args.image_dir, 'val2017')
+            image_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+            for image_file in tqdm(image_files):
                 frame = cv2.imread(image_file)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 
                 frame = perform_inference(hef_name, frame, input_shape, infer_pipeline, network_group, input_vstream_info)  # Perform inference
                 
-                # Display the image with inference results
-                img = Image.fromarray(frame)
-                img.show()
-                time.sleep(1)  # Pause to view the image
+                # Save the image with inference results
+                output_path = os.path.join(args.output_dir, os.path.basename(image_file))
+                frame.save(output_path)
 
 if __name__ == "__main__":
     main()

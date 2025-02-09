@@ -9,11 +9,12 @@ Usage:
     $(basename ${0}) [<options>]
 
 Options:
-    --model, -m           model to use (yolov8n, yolox_l_leaky, yolox_s_leaky, yolox_tiny, yolox_nano, deeplab_v3_mobilenet_v2, yolov8s_seg)
-    --load-image, -l      load image (camera, image_file)
-    --image-dir-path, -i  image directory path
-    --version, -v         print version
-    --help, -h            print this
+    --model, -m            model to use (yolov8n, yolox_l_leaky, yolox_s_leaky, yolox_tiny, yolox_nano, deeplab_v3_mobilenet_v2, yolov8s_seg)
+    --load-image, -l       load image (camera, image_file)
+    --image-dir-path, -i   image directory path
+    --output-dir-path, -o  output directory path
+    --version, -v          print version
+    --help, -h             print this
 EOF
 }
 
@@ -49,6 +50,11 @@ do
 
         --image-dir-path|-i)
             IMAGE_DIR_PATH=${2}
+            shift
+        ;;
+        
+        --output-dir-path|-o)
+            OUTPUT_DIR_PATH=${2}
             shift
         ;;
         
@@ -96,7 +102,7 @@ if [ ${LOAD_IMAGE} == "camera" ]; then
 elif [ ${LOAD_IMAGE} == "image_file" ]; then
     echo "Load image from image file"
     PYTHON_SCRIPT="src/inference-image-files.py"
-    OPTIONS="--hef ${MODEL_PATH} --image_dir ${IMAGE_DIR_PATH}"
+    OPTIONS="--hef ${MODEL_PATH} --image_dir ${IMAGE_DIR_PATH} --output_dir ${OUTPUT_DIR_PATH}"
 else
     echo "[ERROR] Invalid option '${LOAD_IMAGE}'"
     usage
