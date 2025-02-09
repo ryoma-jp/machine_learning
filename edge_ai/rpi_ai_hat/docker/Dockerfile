@@ -15,6 +15,7 @@ RUN apt update && apt install -y \
     python3-picamera2 \
     python3-pil python3-pil.imagetk \
     libgl1-mesa-glx \
+    unzip \
     && apt clean \
     && apt autoremove \
     && rm -rf /var/cache/apt/archives/* \

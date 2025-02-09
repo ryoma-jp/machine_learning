@@ -123,6 +123,7 @@ services:
     stdin_open: true
     environment:
       - DISPLAY=${DISPLAY}
+      - PYTHONPATH=${PWD}
     privileged: true
     volumes:
       - type: bind
