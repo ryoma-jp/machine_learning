@@ -91,7 +91,13 @@ def main():
         PaddingImageTransform((height, width)),
         transforms.ToTensor()
     ])
-    dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=args.image_dir, resize=(height, width), transform=transform, batch_size=batch_size)
+    dataloader = DataLoader(dataset_name='coco2017_pytorch',
+                            dataset_dir=args.image_dir,
+                            batch_size=batch_size,
+                            resize=(height, width),
+                            transform=transform,
+                            load_trainset=False,
+                            load_testset=True)
 
     # Configure network groups
     start_time = time.time()
@@ -122,6 +128,7 @@ def main():
         with network_group.activate(network_group_params):
             test_dir = os.path.join(args.image_dir, 'val2017')
             image_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+            image_files.sort()
             for image_file in tqdm(image_files):
                 frame = cv2.imread(image_file)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

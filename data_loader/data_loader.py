@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from urllib import request
@@ -17,18 +16,30 @@ class _DataLoaderCifar10PyTorch():
     Data Loader for CIFAR-10 dataset for PyTorch
     This class provides to load CIFAR-10 dataset for PyTorch.
     """
-    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
-        trainset = Cifar10ClassificationDataset(root=dataset_dir, train=True,
+    def __init__(self, 
+                 resize=(32, 32), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
+        if (load_trainset):
+            trainset = Cifar10ClassificationDataset(root=dataset_dir, train=True,
+                                                    download=True, transform=transform)
+            self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                    shuffle=shuffle_trainloader, num_workers=2)
+        else:
+            self.trainloader = None
+        if (load_testset):
+            testset = Cifar10ClassificationDataset(root=dataset_dir, train=False,
                                                 download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader, num_workers=2)
-
-        testset = Cifar10ClassificationDataset(root=dataset_dir, train=False,
-                                            download=True, transform=transform)
-        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader, num_workers=2)
-
-        self.classe_name = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+            self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                    shuffle=shuffle_testloader, num_workers=2)
+        else:
+            self.testloader = None
+        self.class_name = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     
     def inverse_normalize(self, img):
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
@@ -39,7 +50,15 @@ class _DataLoaderCifar100PyTorch():
     Data Loader for CIFAR-100 dataset for PyTorch
     This class provides to load CIFAR-100 dataset for PyTorch.
     """
-    def __init__(self, resize=(32, 32), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(32, 32), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         if (transform is None):
             transform = transforms.Compose([
                 transforms.Resize(resize),
@@ -49,17 +68,21 @@ class _DataLoaderCifar100PyTorch():
         else:
             transform = transform
         
-        trainset = torchvision.datasets.CIFAR100(root=dataset_dir, train=True,
+        if (load_trainset):
+            trainset = torchvision.datasets.CIFAR100(root=dataset_dir, train=True,
+                                                    download=True, transform=transform)
+            self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                    shuffle=shuffle_trainloader, num_workers=2)
+        else:
+            self.trainloader = None
+        if (load_testset):
+            testset = torchvision.datasets.CIFAR100(root=dataset_dir, train=False,
                                                 download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader, num_workers=2)
-
-        testset = torchvision.datasets.CIFAR100(root=dataset_dir, train=False,
-                                            download=True, transform=transform)
-        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader, num_workers=2)
-
-        self.classe_name = (
+            self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                    shuffle=shuffle_testloader, num_workers=2)
+        else:
+            self.testloader = None
+        self.class_name = (
             'beaver', 'dolphin', 'otter', 'seal', 'whale',
             'aquarium fish', 'flatfish', 'ray', 'shark', 'trout',
             'orchids', 'poppies', 'roses', 'sunflowers', 'tulips',
@@ -91,7 +114,15 @@ class _DataLoaderFood101PyTorch():
     Data Loader for Food-101 dataset for PyTorch
     This class provides to load Food-101 dataset for PyTorch.
     """
-    def __init__(self, resize=(128, 128), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(128, 128), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         if (transform is None):
             transform = transforms.Compose([
                 transforms.Resize(resize),
@@ -133,14 +164,18 @@ class _DataLoaderFood101PyTorch():
             for test_file in test_file_list:
                 os.symlink(Path(dataset_dir, 'food-101/images', test_file), Path(test_images_dir, test_file))
         
-        train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/train_images/'), transform=transform)
-        self.train_file_list = [train_file[len(f'{dataset_dir}/food-101/train_images/'):] for train_file, _ in train_images.imgs]
-        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
-        
-        test_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/test_images/'), transform=transform)
-        self.test_file_list = [test_file[len(f'{dataset_dir}/food-101/test_images/'):] for test_file, _ in test_images.imgs]
-        self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=shuffle_testloader, num_workers=2)
-        
+        if (load_trainset):
+            train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/train_images/'), transform=transform)
+            self.train_file_list = [train_file[len(f'{dataset_dir}/food-101/train_images/'):] for train_file, _ in train_images.imgs]
+            self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
+        else:
+            self.trainloader = None
+        if (load_testset):
+            test_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'food-101/test_images/'), transform=transform)
+            self.test_file_list = [test_file[len(f'{dataset_dir}/food-101/test_images/'):] for test_file, _ in test_images.imgs]
+            self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=shuffle_testloader, num_workers=2)
+        else:
+            self.testloader = None
         self.class_name = train_images.classes
     
     def inverse_normalize(self, img):
@@ -152,7 +187,15 @@ class _DataLoaderOfficeHomePyTorch():
     Data Loader for OfficeHome dataset for PyTorch
     This class provides to load OfficeHome dataset for PyTorch.
     """
-    def __init__(self, resize=(227, 227), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(227, 227), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         # --- Extract dataset ---
         filename = 'OfficeHomeDataset_10072016.zip'
         filepath = Path(dataset_dir, filename)
@@ -168,17 +211,33 @@ class _DataLoaderOfficeHomePyTorch():
         else:
             transform = transform
         
-        train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'OfficeHomeDataset_10072016/Art/'), transform=transform)
-        self.train_file_list = [train_file[len(f'{dataset_dir}/OfficeHomeDataset_10072016/Art/'):] for train_file, _ in train_images.imgs]
-        self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
-        
+        if (load_trainset):
+            train_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'OfficeHomeDataset_10072016/Art/'), transform=transform)
+            self.train_file_list = [train_file[len(f'{dataset_dir}/OfficeHomeDataset_10072016/Art/'):] for train_file, _ in train_images.imgs]
+            self.trainloader = torch.utils.data.DataLoader(train_images, batch_size=batch_size, shuffle=shuffle_trainloader, num_workers=2)
+        else:
+            self.trainloader = None
+        if (load_testset):
+            test_images = torchvision.datasets.ImageFolder(root=Path(dataset_dir, 'OfficeHomeDataset_10072016/Art/'), transform=transform)
+            self.test_file_list = [test_file[len(f'{dataset_dir}/OfficeHomeDataset_10072016/Art/'):] for test_file, _ in test_images.imgs]
+            self.testloader = torch.utils.data.DataLoader(test_images, batch_size=batch_size, shuffle=shuffle_testloader, num_workers=2)
+        else:
+            self.testloader = None
         self.class_name = train_images.classes
         
 class _DataLoaderCoco2014PyTorch():
     """
     Data Loader for COCO2014 dataset for PyTorch
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(224, 224), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         # --- Define transform ---
         #   - ToTensor: Convert PIL Image to Tensor
         #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
@@ -192,21 +251,27 @@ class _DataLoaderCoco2014PyTorch():
         else:
             transform = transform
         
-        trainset = Coco2014Dataset(root=dataset_dir, train=True,
+        if (load_trainset):
+            trainset = Coco2014Dataset(root=dataset_dir, train=True,
+                                                    input_size=resize,
+                                                    download=True, transform=transform)
+            self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                    shuffle=shuffle_trainloader,
+                                                    collate_fn=collate_fn, num_workers=8)
+            self.class_name = trainset.df_annotations['category_name'].unique().tolist()
+        else:
+            self.trainloader = None
+        if (load_testset):
+            testset = Coco2014Dataset(root=dataset_dir, train=False,
                                                 input_size=resize,
                                                 download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader,
-                                                collate_fn=collate_fn, num_workers=8)
-
-        testset = Coco2014Dataset(root=dataset_dir, train=False,
-                                            input_size=resize,
-                                            download=True, transform=transform)
-        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader,
-                                                collate_fn=collate_fn, num_workers=8)
-
-        self.class_name = trainset.df_annotations['category_name'].unique().tolist()
+            self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                    shuffle=shuffle_testloader,
+                                                    collate_fn=collate_fn, num_workers=8)
+            if (self.class_name is None):
+                self.class_name = testset.df_annotations['category_name'].unique().tolist()
+        else:
+            self.testloader = None
     
     def inverse_normalize(self, img):
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
@@ -217,7 +282,15 @@ class _DataLoaderCoco2014ClassificationPyTorch():
     Data Loader for COCO2014 classification dataset for PyTorch
     This class provides to load COCO2014 classification dataset for PyTorch.
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(224, 224), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         if (transform is None):
             transform = transforms.Compose([
                 transforms.ToTensor(),
@@ -226,17 +299,23 @@ class _DataLoaderCoco2014ClassificationPyTorch():
         else:
             transform = transform
         
-        trainset = Coco2014ClassificationDataset(root=dataset_dir, train=True,
+        if (load_trainset):
+            trainset = Coco2014ClassificationDataset(root=dataset_dir, train=True,
+                                                    download=True, transform=transform)
+            self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                    shuffle=shuffle_trainloader, num_workers=8)
+            self.class_name = trainset.df_dataset['category_name'].unique().tolist()
+        else:
+            self.trainloader = None
+        if (load_testset):
+            testset = Coco2014ClassificationDataset(root=dataset_dir, train=False,
                                                 download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader, num_workers=8)
-
-        testset = Coco2014ClassificationDataset(root=dataset_dir, train=False,
-                                            download=True, transform=transform)
-        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader, num_workers=8)
-
-        self.class_name = trainset.df_dataset['category_name'].unique().tolist()
+            self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                    shuffle=shuffle_testloader, num_workers=8)
+            if (self.class_name is None):
+                self.class_name = testset.df_dataset['category_name'].unique().tolist()
+        else:
+            self.testloader = None
     
     def inverse_normalize(self, img):
         transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
@@ -246,7 +325,15 @@ class _DataLoaderCoco2017PyTorch():
     """
     Data Loader for COCO2017 dataset for PyTorch
     """
-    def __init__(self, resize=(224, 224), dataset_dir='/tmp/dataset', batch_size=32, shuffle_trainloader=True, shuffle_testloader=False, transform=None) -> None:
+    def __init__(self, 
+                 resize=(224, 224), 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 shuffle_trainloader=True, 
+                 shuffle_testloader=False, 
+                 transform=None, 
+                 load_trainset=True, 
+                 load_testset=True) -> None:
         # --- Define transform ---
         #   - ToTensor: Convert PIL Image to Tensor
         #       - Convert shape(HWC -> CHW) and range([0, 255] -> [0.0, 1.0])
@@ -260,21 +347,30 @@ class _DataLoaderCoco2017PyTorch():
         else:
             transform = transform
         
-        trainset = Coco2017Dataset(root=dataset_dir, train=True,
+        self.class_name = None
+        if (load_trainset):
+            trainset = Coco2017Dataset(root=dataset_dir, train=True,
+                                                    input_size=resize,
+                                                    download=True, transform=transform)
+            self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                    shuffle=shuffle_trainloader,
+                                                    collate_fn=collate_fn, num_workers=8)
+            self.class_name = trainset.df_annotations['category_name'].unique().tolist()
+        else:
+            self.trainloader = None
+
+        if (load_testset):
+            testset = Coco2017Dataset(root=dataset_dir, train=False,
                                                 input_size=resize,
                                                 download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                                shuffle=shuffle_trainloader,
-                                                collate_fn=collate_fn, num_workers=8)
+            self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                                    shuffle=shuffle_testloader,
+                                                    collate_fn=collate_fn, num_workers=8)
+            if (self.class_name is None):
+                self.class_name = testset.df_annotations['category_name'].unique().tolist()
+        else:
+            self.testloader = None
 
-        testset = Coco2017Dataset(root=dataset_dir, train=False,
-                                            input_size=resize,
-                                            download=True, transform=transform)
-        self.testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                                shuffle=shuffle_testloader,
-                                                collate_fn=collate_fn, num_workers=8)
-
-        self.class_name = trainset.df_annotations['category_name'].unique().tolist()
     
     def inverse_normalize(self, img):
 #        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
@@ -314,9 +410,22 @@ class DataLoader():
         'coco2017_pytorch': _DataLoaderCoco2017PyTorch,
     }
     
-    def __init__(self, dataset_name=DATASET_NAMES[0], resize=None, dataset_dir='/tmp/dataset', batch_size=32, transform=None) -> None:
+    def __init__(self, 
+                 dataset_name=DATASET_NAMES[0], 
+                 resize=None, 
+                 dataset_dir='/tmp/dataset', 
+                 batch_size=32, 
+                 transform=None,
+                 load_trainset=True,
+                 load_testset=True) -> None:
         if (resize is None):
             resize = self.DEFAULT_SIZE[dataset_name]
             
-        self.dataset = self.FUNCTION_TABLE[dataset_name](resize=resize, dataset_dir=dataset_dir, batch_size=batch_size, transform=transform)
-        
+        self.dataset = self.FUNCTION_TABLE[dataset_name](
+            resize=resize,
+            dataset_dir=dataset_dir,
+            batch_size=batch_size,
+            transform=transform,
+            load_trainset=load_trainset,
+            load_testset=load_testset)
+
