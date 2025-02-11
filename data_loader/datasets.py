@@ -427,10 +427,6 @@ class Coco2017Dataset(Dataset):
         if (image.mode != 'RGB'):
             image = image.convert('RGB')
         
-        # --- Resize Image ---
-        image = image.resize(self.input_size, Image.Resampling.BILINEAR)
-        image = np.array(image, dtype=np.float32) / 255.0
-        
         # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)

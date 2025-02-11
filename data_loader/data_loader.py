@@ -341,8 +341,9 @@ class _DataLoaderCoco2017PyTorch():
         #   - Normalize: Normalize the image with mean and standard deviation
         if (transform is None):
             transform = transforms.Compose([
+                transforms.Resize(resize, interpolation=transforms.InterpolationMode.BILINEAR),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
             ])
         else:
             transform = transform
