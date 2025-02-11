@@ -245,8 +245,9 @@ class _DataLoaderCoco2014PyTorch():
         #   - Normalize: Normalize the image with mean and standard deviation
         if (transform is None):
             transform = transforms.Compose([
+                transforms.Resize(resize, interpolation=transforms.InterpolationMode.BILINEAR),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
             ])
         else:
             transform = transform
@@ -274,8 +275,7 @@ class _DataLoaderCoco2014PyTorch():
             self.testloader = None
     
     def inverse_normalize(self, img):
-        transform = transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))
-        return transform(img) * 255.0
+        return img * 255.0
 
 class _DataLoaderCoco2014ClassificationPyTorch():
     """

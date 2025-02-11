@@ -39,7 +39,9 @@ class SSDLite320MobileNetv3Large():
         
         # --- Transform ---
         self.transform = transforms.Compose([
+            transforms.Resize(self.input_size[2:], interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.ToTensor(),
+            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
         ])
         
     def predict(self, testloader, score_th=0.5, save_dir=None):
