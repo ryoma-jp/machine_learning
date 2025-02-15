@@ -18,6 +18,9 @@ services:
       - type: bind
         source: .
         target: /workspace
+      - type: bind
+        source: $HOME/work/dataset
+        target: /dataset
     ports:
       - ${ML_PORT}:8888
     deploy:
