@@ -1,5 +1,6 @@
 
 import torch
+import onnx
 import tvm
 from tvm import relay
 from pathlib import Path
@@ -7,7 +8,8 @@ from pathlib import Path
 class PyTorchModelBase():
     def convert_to_onnx(self, output_file='model.onnx', input_names=['modelInput'], output_names=['modelOutput']) -> None:
         self.net.cpu().eval()
-        dummy_input = torch.randn(self.input_size, requires_grad=True)
+        print(f'input_shape: {self.input_size}')
+        dummy_input = torch.randn(self.input_size, requires_grad=False)
         torch.onnx.export(
             self.net,
             dummy_input,
@@ -15,7 +17,14 @@ class PyTorchModelBase():
             opset_version=11,
             input_names=input_names,
             output_names=output_names,
+            dynamic_axes=None,
+            do_constant_folding=True,
+            keep_initializers_as_inputs=True,
             verbose=False)
+        
+        onnx_model = onnx.load(output_file)
+        inferred_model = onnx.shape_inference.infer_shapes(onnx_model)
+        onnx.save(inferred_model, output_file)
         self.net.to(self.device)
     
     def convert_to_arm_compute_lib_via_tvm(self, output_dir='arm_compute_library', input_name='modelInput', output_name='modelOutput') -> None:
