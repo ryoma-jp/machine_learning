@@ -134,7 +134,7 @@ class CSPLayer(nn.Module):
         self.conv1 = BaseConv(in_channels, hidden_channels, 1, 1, act=act)
         self.conv2 = BaseConv(in_channels, hidden_channels, 1, 1, act=act)
         self.conv3 = BaseConv(hidden_channels * 2, out_channels, 1, 1, act=act)
-        self.convs = nn.Sequential(*[Bottleneck(hidden_channels, hidden_channels, 1, expansion=1.0, shortcut=shortcut, act=act) for _ in range(n)])
+        self.convs = nn.Sequential(*[Bottleneck(hidden_channels, hidden_channels, stride=1, expansion=1.0, shortcut=shortcut, act=act) for _ in range(n)])
         self.shortcut = shortcut
 
     def forward(self, x):

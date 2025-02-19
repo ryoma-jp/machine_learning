@@ -42,6 +42,7 @@ class YOLOX(nn.Module):
         backbone, 
         head, 
         num_classes, 
+        out_layers=['dark3', 'dark4', 'dark5'],
         width=1.0, 
         deep_bias=False, 
         act='silu', 
@@ -64,17 +65,18 @@ class YOLOX(nn.Module):
         self.backbone = backbone
         self.head = head
         self.num_classes = num_classes
+        self.output_layers = out_layers
         self.width = width
         self.deep_bias = deep_bias
         self.act = act
         self.onnx_export = onnx_export
 
-        # stem
+        # backbone - stem
         in_channels = 3 * 4
         out_channels = in_channels * 2
         self.stem = Focus(in_channels, out_channels, kernel_size=3, stride=1, act=self.act)
 
-        # dark2
+        # backbone - dark2
         dark2_in_channels = out_channels
         dark2_out_channels = out_channels * 2
         kernel_size = 3
@@ -86,7 +88,7 @@ class YOLOX(nn.Module):
             CSPLayer(dark2_out_channels, dark2_out_channels, n=1, shortcut=True, act=self.act)
         )
 
-        # dark3
+        # backbone - dark3
         dark3_in_channels = dark2_out_channels
         dark3_out_channels = dark2_out_channels * 2
         kernel_size = 3
@@ -98,7 +100,7 @@ class YOLOX(nn.Module):
             CSPLayer(dark3_out_channels, dark3_out_channels, n=3, shortcut=True, act=self.act)
         )
 
-        # dark4
+        # backbone - dark4
         dark4_in_channels = dark3_out_channels
         dark4_out_channels = dark3_out_channels * 2
         kernel_size = 3
@@ -110,7 +112,7 @@ class YOLOX(nn.Module):
             CSPLayer(dark4_out_channels, dark4_out_channels, n=3, shortcut=True, act=self.act)
         )
 
-        # dark5
+        # backbone - dark5
         dark5_in_channels = dark4_out_channels
         dark5_out_channels = dark4_out_channels * 2
         kernel_size = 3
@@ -123,10 +125,51 @@ class YOLOX(nn.Module):
             CSPLayer(dark5_out_channels, dark5_out_channels, n=1, shortcut=False, act=self.act)
         )
 
+        # neck
+        neck_channels = [96, 192, 384]
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+        self.neck_conv0 = BaseConv(neck_channels[2], neck_channels[1], 1, 1, act=self.act)
+        self.neck_conv1 = BaseConv(neck_channels[1], neck_channels[0], 1, 1, act=self.act)
+        self.neck_conv2 = BaseConv(neck_channels[0], neck_channels[0], 3, 2, act=self.act)
+        self.neck_conv3 = BaseConv(neck_channels[1], neck_channels[1], 3, 2, act=self.act)
+        self.neck_csp0 = CSPLayer(neck_channels[1] * 2, neck_channels[1], n=1, shortcut=False, expansion=0.25, act=self.act)
+        self.neck_csp1 = CSPLayer(neck_channels[0] * 2, neck_channels[0], n=1, shortcut=False, expansion=0.25, act=self.act)
+        self.neck_csp2 = CSPLayer(neck_channels[0] * 2, neck_channels[1], n=1, shortcut=False, expansion=0.5, act=self.act)
+        self.neck_csp3 = CSPLayer(neck_channels[1] * 2, neck_channels[2], n=1, shortcut=False, expansion=0.5, act=self.act)
+
     def forward(self, x):
+        outputs = {}
         x = self.stem(x)
+        outputs['stem'] = x
         x = self.dark2(x)
+        outputs['dark2'] = x
         x = self.dark3(x)
+        outputs['dark3'] = x
         x = self.dark4(x)
+        outputs['dark4'] = x
         x = self.dark5(x)
-        return x
+        outputs['dark5'] = x
+
+        backbone_outputs = [outputs[key] for key in self.output_layers]
+
+        fpn_out0 = self.neck_conv0(backbone_outputs[2])
+        out0_ = self.upsample(fpn_out0)
+        out0_ = torch.cat([out0_, backbone_outputs[1]], dim=1)
+        out0_ = self.neck_csp0(out0_)
+
+        fpn_out1 = self.neck_conv1(out0_)
+        out1_ = self.upsample(fpn_out1)
+        out1_ = torch.cat([out1_, backbone_outputs[0]], dim=1)
+        neck_out2 = self.neck_csp1(out1_)
+
+        out2_ = self.neck_conv2(neck_out2)
+        out2_ = torch.cat([out2_, fpn_out1], dim=1)
+        neck_out1 = self.neck_csp2(out2_)
+
+        out3_ = self.neck_conv3(neck_out1)
+        out3_ = torch.cat([out3_, fpn_out0], dim=1)
+        neck_out0 = self.neck_csp3(out3_)
+
+        outputs = (neck_out2, neck_out1, neck_out0)
+        return outputs
+    
