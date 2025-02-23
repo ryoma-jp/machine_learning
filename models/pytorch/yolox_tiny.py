@@ -25,11 +25,14 @@ class YOLOX_Tiny(PyTorchModelBase):
         self.input_size = [1] + list(input_size[1:])
         self.output_dir = output_dir
 
+        # --- Load model ---
         name = 'yolox_tiny'
         backbone = None
         head = None
         num_classes = num_classes
         self.net = YOLOX(name, backbone, head, num_classes)
+        if (pth_path is not None):
+            self.net.load_state_dict(torch.load(pth_path))
         
         self.net.to(self.device)
         print(summary(self.net, input_size=input_size))
