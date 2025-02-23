@@ -137,7 +137,37 @@ class YOLOX(nn.Module):
         self.neck_csp2 = CSPLayer(neck_channels[0] * 2, neck_channels[1], n=1, shortcut=False, expansion=0.5, act=self.act)
         self.neck_csp3 = CSPLayer(neck_channels[1] * 2, neck_channels[2], n=1, shortcut=False, expansion=0.5, act=self.act)
 
+        # head
+        head_channels = [96, 192, 384]
+        self.head_stems = nn.ModuleList()
+        self.classifier_convs = nn.ModuleList()
+        self.regressor_convs = nn.ModuleList()
+        self.classifier_preds = nn.ModuleList()
+        self.regressor_preds = nn.ModuleList()
+        self.object_preds = nn.ModuleList()
+        for head_channel in head_channels:
+            self.head_stems.append(BaseConv(head_channel, 96, 1, 1, act=self.act))
+
+            self.classifier_convs.append(
+                nn.Sequential(*[BaseConv(96, 96, 3, 1, act=self.act), BaseConv(96, 96, 3, 1, act=self.act)])
+            )
+            self.regressor_convs.append(
+                nn.Sequential(*[BaseConv(96, 96, 3, 1, act=self.act), BaseConv(96, 96, 3, 1, act=self.act)])
+            )
+
+            self.classifier_preds.append(
+                nn.Conv2d(96, self.num_classes, 1, 1, 0)
+            )
+            self.regressor_preds.append(
+                nn.Conv2d(96, 4, 1, 1, 0)
+            )
+            self.object_preds.append(
+                nn.Conv2d(96, 1, 1, 1, 0)
+            )
+
+
     def forward(self, x):
+        # backbone
         outputs = {}
         x = self.stem(x)
         outputs['stem'] = x
@@ -152,6 +182,7 @@ class YOLOX(nn.Module):
 
         backbone_outputs = [outputs[key] for key in self.output_layers]
 
+        # neck
         fpn_out0 = self.neck_conv0(backbone_outputs[2])
         out0_ = self.upsample(fpn_out0)
         out0_ = torch.cat([out0_, backbone_outputs[1]], dim=1)
@@ -169,7 +200,44 @@ class YOLOX(nn.Module):
         out3_ = self.neck_conv3(neck_out1)
         out3_ = torch.cat([out3_, fpn_out0], dim=1)
         neck_out0 = self.neck_csp3(out3_)
+        neck_out = (neck_out2, neck_out1, neck_out0)
 
-        outputs = (neck_out2, neck_out1, neck_out0)
+        # head
+        head_out = []
+        for i, (x, head_stem) in enumerate(zip(neck_out, self.head_stems)):
+            head_stem_out = head_stem(x)
+            head_classifier_feature = self.classifier_convs[i](head_stem_out)
+            head_classifier_out = self.classifier_preds[i](head_classifier_feature)
+            head_regressor_feature = self.regressor_convs[i](head_stem_out)
+            head_regressor_out = self.regressor_preds[i](head_regressor_feature)
+            head_object_out = self.object_preds[i](head_regressor_feature)
+
+            head_out.append(torch.cat([head_regressor_out, head_object_out.sigmoid(), head_classifier_out.sigmoid()], dim=1))
+        
+#        hw_ = [x_.shape[-2:] for x_ in head_out]
+        outputs = torch.cat(
+            [x_.flatten(start_dim=2) for x_ in head_out], dim=2
+        ).permute(0, 2, 1)
+
+#        # decode
+#        grids = []
+#        strides = []
+#        strides_=[8, 16, 32]
+#        for (hsize, wsize), stride in zip(hw_, strides_):
+#            yv, xv = torch.meshgrid(*[torch.arange(hsize), torch.arange(wsize)], indexing="ij")
+#            grid = torch.stack((xv, yv), 2).view(1, -1, 2)
+#            grids.append(grid)
+#            shape = grid.shape[:2]
+#            strides.append(torch.full((*shape, 1), stride))
+#
+#        grids = torch.cat(grids, dim=1).type(x[0].type())
+#        strides = torch.cat(strides, dim=1).type(x[0].type())
+#
+#        outputs = torch.cat([
+#            (outputs[..., 0:2] + grids) * strides,
+#            torch.exp(outputs[..., 2:4]) * strides,
+#            outputs[..., 4:]
+#        ], dim=-1)
+
         return outputs
     
