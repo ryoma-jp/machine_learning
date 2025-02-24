@@ -214,30 +214,30 @@ class YOLOX(nn.Module):
 
             head_out.append(torch.cat([head_regressor_out, head_object_out.sigmoid(), head_classifier_out.sigmoid()], dim=1))
         
-#        hw_ = [x_.shape[-2:] for x_ in head_out]
+        hw_ = [x_.shape[-2:] for x_ in head_out]
         outputs = torch.cat(
             [x_.flatten(start_dim=2) for x_ in head_out], dim=2
         ).permute(0, 2, 1)
 
-#        # decode
-#        grids = []
-#        strides = []
-#        strides_=[8, 16, 32]
-#        for (hsize, wsize), stride in zip(hw_, strides_):
-#            yv, xv = torch.meshgrid(*[torch.arange(hsize), torch.arange(wsize)], indexing="ij")
-#            grid = torch.stack((xv, yv), 2).view(1, -1, 2)
-#            grids.append(grid)
-#            shape = grid.shape[:2]
-#            strides.append(torch.full((*shape, 1), stride))
-#
-#        grids = torch.cat(grids, dim=1).type(x[0].type())
-#        strides = torch.cat(strides, dim=1).type(x[0].type())
-#
-#        outputs = torch.cat([
-#            (outputs[..., 0:2] + grids) * strides,
-#            torch.exp(outputs[..., 2:4]) * strides,
-#            outputs[..., 4:]
-#        ], dim=-1)
+        # decode
+        grids = []
+        strides = []
+        strides_=[8, 16, 32]
+        for (hsize, wsize), stride in zip(hw_, strides_):
+            yv, xv = torch.meshgrid(*[torch.arange(hsize), torch.arange(wsize)], indexing="ij")
+            grid = torch.stack((xv, yv), 2).view(1, -1, 2)
+            grids.append(grid)
+            shape = grid.shape[:2]
+            strides.append(torch.full((*shape, 1), stride))
+
+        grids = torch.cat(grids, dim=1).type(x[0].type())
+        strides = torch.cat(strides, dim=1).type(x[0].type())
+
+        outputs = torch.cat([
+            (outputs[..., 0:2] + grids) * strides,
+            torch.exp(outputs[..., 2:4]) * strides,
+            outputs[..., 4:]
+        ], dim=-1)
 
         return outputs
     

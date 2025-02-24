@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import types
 from numpy import random
+from PIL import Image
 
 
 def intersect(box_a, box_b):
@@ -409,3 +410,18 @@ class PhotometricDistort(object):
             distort = Compose(self.pd[1:])
         im, boxes, labels = distort(im, boxes, labels)
         return self.rand_light_noise(im, boxes, labels)
+
+class PaddingImageTransform:
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, image):
+        img_w, img_h = image.size
+        model_input_w, model_input_h = self.size
+        scale = min(model_input_w / img_w, model_input_h / img_h)
+        scaled_w = int(img_w * scale)
+        scaled_h = int(img_h * scale)
+        image = image.resize((scaled_w, scaled_h), Image.Resampling.BILINEAR)
+        new_image = Image.new('RGB', self.size, (114, 114, 114))
+        new_image.paste(image, (0, 0))
+        return new_image

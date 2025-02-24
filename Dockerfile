@@ -1,7 +1,7 @@
 FROM nvcr.io/nvidia/pytorch:24.07-py3
 
 RUN apt update && \
-    apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+    apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu fonts-liberation
 
 RUN pip install nvidia-pyindex onnx-graphsurgeon
 

@@ -6,6 +6,30 @@ from tvm import relay
 from pathlib import Path
 
 class PyTorchModelBase():
+    def __init__(self, device, input_size, output_dir='outputs', pth_path=None) -> None:
+        '''Initialize PyTorchModelBase
+        '''
+
+    def train(self, trainloader, epochs=10, optim_params=None, output_dir=None) -> None:
+        '''Train the model
+        '''
+        pass
+
+    def predict(self, testloader, score_th=0.5, save_dir=None):
+        '''Predict
+        '''
+        pass
+
+    def decode_predictions(self, predictions):
+        '''Decode predictions
+        '''
+        pass
+    
+    def evaluate(self, testloader, score_th=0.5, save_dir=None):
+        '''Evaluate
+        '''
+        pass
+
     def convert_to_onnx(self, output_file='model.onnx', input_names=['modelInput'], output_names=['modelOutput']) -> None:
         self.net.cpu().eval()
         print(f'input_shape: {self.input_size}')
