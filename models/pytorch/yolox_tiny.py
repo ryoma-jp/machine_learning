@@ -124,12 +124,13 @@ class YOLOX_Tiny(PyTorchModelBase):
             for j in range(len(detection)):
                 bbox = np.array(detection)[j][:4]
                 score = np.array(detection)[j][4]
+                class_id = np.argmax(np.array(detection)[j][5:])
                 if score < threshold:
                     continue
                 else:
                     boxes.append(bbox)
                     scores.append(score)
-                    classes.append(i)
+                    classes.append(class_id)
                     num_detections = num_detections + 1
         
         return {'detection_boxes': [boxes], 
