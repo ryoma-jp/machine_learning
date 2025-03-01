@@ -290,6 +290,7 @@ class Coco2014Dataset(Dataset):
 #        print(f'annotation: {annotation}')
 #        print(f'annotation: {annotation[0]["bbox"]}')
         bbox = [x['bbox'] for x in annotation]
+        category_id = [x['category_id'] for x in annotation]
 #        print(f'bbox: {bbox}')
         load_target_time = time.time() - start
         
@@ -297,6 +298,7 @@ class Coco2014Dataset(Dataset):
             'image_id': image_id,
             'image_size': image_size,
             'boxes': bbox,
+            'category_id': category_id,
         }
         
         # --- T.B.D ---
@@ -434,6 +436,7 @@ class Coco2017Dataset(Dataset):
 #        print(f'annotation: {annotation}')
 #        print(f'annotation: {annotation[0]["bbox"]}')
         bbox = [x['bbox'] for x in annotation]
+        category_id = [x['category_id'] for x in annotation]
 #        print(f'bbox: {bbox}')
         load_target_time = time.time() - start
         
@@ -441,6 +444,7 @@ class Coco2017Dataset(Dataset):
             'image_id': image_id,
             'image_size': image_size,
             'boxes': bbox,
+            'category_id': category_id,
         }
         
         # --- T.B.D ---

@@ -52,91 +52,81 @@ class YOLOX_Tiny(PyTorchModelBase):
         return train_results
     
     def predict(self, testloader, save_dir=None):
-#        self.net.to(self.device)
-#        input_tensor_names = []
-#        predictions = []
-#        labels = []
-#        processing_time = {
-#            'preprocessing': 0.0,
-#            'inference': 0.0,
-#        }
-#        
-#        if (save_dir is not None):
-#            Path(save_dir).mkdir(parents=True, exist_ok=True)
-#            input_tensor_dir = Path(save_dir, 'input_tensors')
-#            input_tensor_dir.mkdir(parents=True, exist_ok=True)
-#            sample_idx = 0
-#        with torch.no_grad():
-#            for (data, preprocessing_time_) in tqdm(testloader):
-#                inputs, labels_ = data
-#                inputs, labels_ = inputs.to(self.device), labels_.to(self.device)
-#                self.net.eval()
-#                start = time.time()
-#                outputs = self.net(inputs)
-#                inference_time = time.time() - start
-#                _, prediction = torch.max(outputs, 1)
-#                
-#                if (save_dir is not None):
-#                    for input_tensor in inputs:
-#                        sample_idx += 1
-#                        input_tensor_name = f'input_{sample_idx:08d}.npy'
-#                        input_tensor_names.append(input_tensor_name)
-#                        if (save_dir is not None):
-#                            np.save(Path(input_tensor_dir, input_tensor_name), input_tensor.to('cpu').detach().numpy())
-#                predictions.extend(prediction.to('cpu').detach().numpy().tolist().copy())
-#                labels.extend(labels_.to('cpu').detach().numpy().tolist().copy())
-#                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
-#                processing_time['inference'] += inference_time
-#            
-#        n_data = len(predictions)
-#        processing_time['preprocessing'] /= n_data
-#        processing_time['inference'] /= n_data
-#        
-#        if (save_dir is not None):
-#            inputs = pd.DataFrame({
-#                'input_tensor_names': input_tensor_names,
-#                'labels': labels,
-#            })
-#            inputs.to_csv(Path(input_tensor_dir, 'inputs.csv'), index=False)
-#            
-#            prediction_results = pd.DataFrame({
-#                'input_tensor_names': input_tensor_names,
-#                'predictions': predictions,
-#                'labels': labels,
-#            })
-#            prediction_results.to_csv(Path(save_dir, 'prediction_results.csv'), index=False)
+        self.net.to(self.device)
+        input_tensor_names = []
+        predictions = []
+        targets = []
+        processing_time = {
+            'preprocessing': 0.0,
+            'inference': 0.0,
+            'postprocessing': 0.0,
+        }
         
-        predictions = None
-        labels = None
-        processing_time = None
-        return predictions, labels, processing_time
+        if (save_dir is not None):
+            Path(save_dir).mkdir(parents=True, exist_ok=True)
+            input_tensor_dir = Path(save_dir, 'input_tensors')
+            input_tensor_dir.mkdir(parents=True, exist_ok=True)
+            sample_idx = 0
+
+        with torch.no_grad():
+            self.net.eval()
+            for (inputs, target, preprocessing_time_) in tqdm(testloader):
+                start = time.time()
+                # convert tuple to torch.Tensor
+                inputs = torch.stack(inputs).to(self.device)
+
+                # inference
+                outputs = self.net(inputs * 255.0)
+                inference_time = time.time() - start
+                
+                start = time.time()
+                for output in outputs.cpu().numpy().tolist():
+                    predictions.append(self.decode_predictions(output))
+                postprocessing_time = time.time() - start
+
+                if (save_dir is not None):
+                    for input_tensor in inputs:
+                        sample_idx += 1
+                        input_tensor_name = f'input_{sample_idx:08d}.npy'
+                        input_tensor_names.append(input_tensor_name)
+                        if (save_dir is not None):
+                            np.save(Path(input_tensor_dir, input_tensor_name), input_tensor.to('cpu').detach().numpy())
+                targets += target
+                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
+                processing_time['inference'] += inference_time
+                processing_time['postprocessing'] += postprocessing_time
+            
+        n_data = len(predictions)
+        processing_time['preprocessing'] /= n_data
+        processing_time['inference'] /= n_data
+        processing_time['postprocessing'] /= n_data
+        
+        if (save_dir is not None):
+            # --- T.B.D ---
+            #  - Save input tensor, targets, predictions
+            pass
+        
+        return predictions, targets, processing_time
     
     def decode_predictions(self, predictions):
-        boxes = []
-        scores = []
-        classes = []
         num_detections = 0
         threshold=0.5
         
-        for i, detection in enumerate(predictions):
-            if len(detection) == 0:
-                continue
-            for j in range(len(detection)):
-                bbox = np.array(detection)[j][:4]
-                score = np.array(detection)[j][4]
-                class_id = np.argmax(np.array(detection)[j][5:])
-                if score < threshold:
-                    continue
-                else:
-                    boxes.append(bbox)
-                    scores.append(score)
-                    classes.append(class_id)
-                    num_detections = num_detections + 1
-        
-        return {'detection_boxes': [boxes], 
-                'detection_classes': [classes], 
-                'detection_scores': [scores],
-                'num_detections': [num_detections]}
+        detections = np.array(predictions)
+        bboxes = detections[:, :4]
+        scores = detections[:, 4]
+        class_ids = np.argmax(detections[:, 5:], axis=1)
+        mask = scores >= threshold
+        bboxes = bboxes[mask].tolist()
+        scores = scores[mask].tolist()
+        classes = class_ids[mask].tolist()
+        num_detections += mask.sum()
+
+        return {
+            'detection_boxes': bboxes, 
+            'detection_classes': classes, 
+            'detection_scores': scores,
+            'num_detections': num_detections}
     
     def evaluate(self, y_true, y_pred) -> dict:
         # --- T.B.D ---
