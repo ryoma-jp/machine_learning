@@ -123,11 +123,15 @@ class YOLOX_Tiny(PyTorchModelBase):
         num_detections += mask.sum()
 
         return {
-            'detection_boxes': bboxes, 
-            'detection_classes': classes, 
-            'detection_scores': scores,
+            'boxes': bboxes, 
+            'labels': classes, 
+            'scores': scores,
             'num_detections': num_detections}
     
     def evaluate(self, y_true, y_pred) -> dict:
         # --- T.B.D ---
         return None
+
+    def get_output_names(self) -> list:
+        return ['boxes', 'scores', 'labels']
+
