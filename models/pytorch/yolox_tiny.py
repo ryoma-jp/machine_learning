@@ -1,9 +1,10 @@
-from typing import Tuple
 import time
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+
+from typing import Tuple
 from torchvision import transforms
 from torchinfo import summary
 from .yolo.yolo import YOLOX
@@ -45,7 +46,7 @@ class YOLOX_Tiny(PyTorchModelBase):
             PaddingImageTransform((height, width)),
             transforms.ToTensor()
         ])
-        
+
     def train(self, trainloader, epochs=10, optim_params=None, output_dir=None) -> None:
         # --- T.B.D ---
         train_results = None
@@ -101,11 +102,6 @@ class YOLOX_Tiny(PyTorchModelBase):
         processing_time['inference'] /= n_data
         processing_time['postprocessing'] /= n_data
         
-        if (save_dir is not None):
-            # --- T.B.D ---
-            #  - Save input tensor, targets, predictions
-            pass
-        
         return predictions, targets, processing_time
     
     def decode_predictions(self, predictions):
@@ -117,9 +113,13 @@ class YOLOX_Tiny(PyTorchModelBase):
         scores = detections[:, 4]
         class_ids = np.argmax(detections[:, 5:], axis=1)
         mask = scores >= threshold
-        bboxes = bboxes[mask].tolist()
-        scores = scores[mask].tolist()
-        classes = class_ids[mask].tolist()
+        bboxes = bboxes[mask]
+        # --- convert [center_x, center_y, width, height] to [x, y, w, h]
+        bboxes[:, 0] = bboxes[:, 0] - bboxes[:, 2] / 2  # x = center_x - width / 2
+        bboxes[:, 1] = bboxes[:, 1] - bboxes[:, 3] / 2  # y = center_y - height / 2
+
+        scores = scores[mask]
+        classes = class_ids[mask]
         num_detections += mask.sum()
 
         return {

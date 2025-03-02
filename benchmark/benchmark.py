@@ -6,12 +6,14 @@ import pickle
 import torch
 import torchvision
 import yaml
+import json
 from data_loader.data_loader import DataLoader
 from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
 from models.pytorch import simple_cnn
 from models.pytorch.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large as PyTorchSSDLite320MobileNetv3Large
+from models.pytorch.yolox_tiny import YOLOX_Tiny as PyTorchYOLOX_Tiny
 from models.onnx.ssdlite320_mobilenetv3_large import SSDLite320MobileNetv3Large as ONNXSSDLite320MobileNetv3Large
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -25,17 +27,26 @@ def parse_args():
     
     return parser.parse_args()
 
-def load_dataset(dataset_name, dataset_dir, transform, batch_size):
+def load_dataset(dataset_name, dataset_dir, transform, batch_size, model_input_hw):
     if (dataset_name == 'cifar10'):
         dataloader = DataLoader(dataset_name='cifar10_pytorch', dataset_dir=dataset_dir, transform=transform)
+        category_mapping = {idx: idx for idx in range(10)}
     elif (dataset_name == 'coco2014'):
-        dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform, batch_size=batch_size)
+        dataloader = DataLoader(dataset_name='coco2014_pytorch', dataset_dir=dataset_dir, resize=model_input_hw, transform=transform, batch_size=batch_size)
+        ann_file = f'{dataset_dir}/annotations/instances_val2014.json'
+        with open(ann_file, 'rb') as f:
+            ann_data = json.load(f)
+        category_mapping = {category['id']: idx for idx, category in enumerate(ann_data['categories'])}
     elif (dataset_name == 'coco2017'):
-        dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=dataset_dir, resize=(320, 320), transform=transform, batch_size=batch_size)
+        dataloader = DataLoader(dataset_name='coco2017_pytorch', dataset_dir=dataset_dir, resize=model_input_hw, transform=transform, batch_size=batch_size)
+        ann_file = f'{dataset_dir}/annotations/instances_val2017.json'
+        with open(ann_file, 'rb') as f:
+            ann_data = json.load(f)
+        category_mapping = {category['id']: idx for idx, category in enumerate(ann_data['categories'])}
     else:
         raise ValueError(f'Invalid dataset_name: {dataset_name}')
     
-    return dataloader
+    return dataloader, category_mapping
 
 def load_model(model_name, device, framework, model_path, output_dir):
     if (model_name == 'simple_cnn'):
@@ -50,6 +61,11 @@ def load_model(model_name, device, framework, model_path, output_dir):
             model = ONNXSSDLite320MobileNetv3Large(device, model_input_size, output_dir=output_dir)
         else:
             raise ValueError(f'Invalid framework: {framework}')
+    elif (model_name == 'yolox_tiny'):
+        model_input_size = [1, 3, 416, 416]
+        num_class = 80
+        if (framework == 'PyTorch'):
+            model = PyTorchYOLOX_Tiny(device, model_input_size, output_dir=output_dir, num_classes=num_class, pth_path=model_path)
         
     return model, model_input_size
 
@@ -153,9 +169,10 @@ def benchmark(args, device):
         
         # --- Load Datasets ---
         batch_size = 32
+        model_input_hw = model_input_size[2:]
         if (framework == 'ONNX'):
             batch_size = 1
-        dataloader = load_dataset(dataset_name, dataset_dir, model.transform, batch_size)
+        dataloader, category_mapping = load_dataset(dataset_name, dataset_dir, model.transform, batch_size, model_input_hw)
         
         # --- Predict ---
         predictions, targets, processing_time = predict(device, model, dataloader, output_dir)
@@ -174,10 +191,21 @@ def benchmark(args, device):
             for prediction, target in zip(predictions, targets):
                 prediction['image_id'] = target['image_id']
 
-                coef_width = target['image_size'][0] / model_input_size[3]
-                coef_height = target['image_size'][1] / model_input_size[2]
-                boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
-                prediction['boxes'] = boxes
+                if (model_name == 'yolox_tiny'):
+                    inv_categorical_mapping = {v: k for k, v in category_mapping.items()}
+                    prediction['labels'] = [inv_categorical_mapping[label] for label in prediction['labels']]
+                    coef_width = target['image_size'][0] / model_input_size[3]
+                    coef_height = target['image_size'][1] / model_input_size[2]
+                    coef = max(coef_width, coef_height)
+                    boxes = np.array([prediction['boxes'][:, 0]*coef, prediction['boxes'][:, 1]*coef, prediction['boxes'][:, 2]*coef, prediction['boxes'][:, 3]*coef]).T
+                    prediction['boxes'] = boxes
+                    print(f'prediction boxes: {prediction["boxes"]}')
+                    print(f'target boxes: {target["boxes"]}')
+                else:
+                    coef_width = target['image_size'][0] / model_input_size[3]
+                    coef_height = target['image_size'][1] / model_input_size[2]
+                    boxes = np.array([prediction['boxes'][:, 0]*coef_width, prediction['boxes'][:, 1]*coef_height, prediction['boxes'][:, 2]*coef_width, prediction['boxes'][:, 3]*coef_height]).T
+                    prediction['boxes'] = boxes
 
             # --- Evaluate ---
             cocoEval = coco_evaluate(predictions, dataset_dir, dataset_name)
