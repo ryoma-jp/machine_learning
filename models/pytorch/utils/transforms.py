@@ -11,7 +11,7 @@ import numpy as np
 import types
 from numpy import random
 from PIL import Image
-
+import torchvision.transforms.functional as F
 
 def intersect(box_a, box_b):
     max_xy = np.minimum(box_a[:, 2:], box_b[2:])
@@ -416,9 +416,14 @@ class PaddingImageTransform:
         self.size = size
 
     def __call__(self, image):
+        if isinstance(image, torch.Tensor):
+            image = F.to_pil_image(image)
+        elif not isinstance(image, Image.Image):
+            raise TypeError(f"Expected PIL.Image or torch.Tensor, but got {type(image)}")
+        
         img_w, img_h = image.size
         model_input_w, model_input_h = self.size
-        scale = min(model_input_w / img_w, model_input_h / img_h)
+        scale = min(model_input_w / float(img_w), model_input_h / float(img_h))
         scaled_w = int(img_w * scale)
         scaled_h = int(img_h * scale)
         image = image.resize((scaled_w, scaled_h), Image.Resampling.BILINEAR)

@@ -373,8 +373,7 @@ class Coco2017Dataset(Dataset):
             dataset_type = 'val2017'
             ann_file = f'{root}/annotations/instances_val2017.json'
         self.annotations = COCO(ann_file)
-        self.imgIds = self.annotations.getImgIds()
-#        self.imgIds = self.annotations.getImgIds()[:100]
+        self.imgIds = list(set([ann['image_id'] for ann in self.annotations.dataset['annotations']]))
         
         # --- Load COCO Images Path ---
         print('[INFO] Load COCO Images Path')
@@ -424,7 +423,7 @@ class Coco2017Dataset(Dataset):
         start = time.time()
         if (image.mode != 'RGB'):
             image = image.convert('RGB')
-        
+
         # --- Transform ---
         if (self.transform is not None):
             image = self.transform(image)

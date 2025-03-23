@@ -77,7 +77,30 @@ class YOLOX_Tiny(PyTorchModelBase):
                 inputs = torch.stack(inputs).to(self.device)
 
                 # inference
-                outputs = self.net(inputs * 255.0)
+                inputs = inputs * 255.0
+                outputs = self.net(inputs)
+                print(outputs)
+                inference_time = time.time() - start
+                
+                start = time.time()
+                for output in outputs.cpu().numpy().tolist():
+                    predictions.append(self.decode_predictions(output))
+                postprocessing_time = time.time() - start
+
+                if (save_dir is not None):
+                    for input_tensor in inputs:
+                        sample_idx += 1
+                        input_tensor_name = f'input_{sample_idx:08d}.npy'
+                        input_tensor_names.append(input_tensor_name)
+                        if (save_dir is not None):
+                            np.save(Path(input_tensor_dir, input_tensor_name), input_tensor.to('cpu').detach().numpy())
+                targets += target
+                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
+                processing_time['inference'] += inference_time
+                processing_time['postprocessing'] += postprocessing_time
+
+                # inference
+                #outputs = self.net(inputs * 255.0)
                 inference_time = time.time() - start
                 
                 start = time.time()
