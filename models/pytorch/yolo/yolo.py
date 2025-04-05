@@ -28,7 +28,7 @@ class Focus(nn.Module):
         patch_top_right = x[..., ::2, 1::2]
         patch_bottom_left = x[..., 1::2, ::2]
         patch_bottom_right = x[..., 1::2, 1::2]
-        x = torch.cat([patch_top_left, patch_top_right, patch_bottom_left, patch_bottom_right], dim=1)
+        x = torch.cat([patch_top_left, patch_bottom_left, patch_top_right, patch_bottom_right], dim=1)
 
         return self.conv(x)
 
@@ -127,7 +127,7 @@ class YOLOX(nn.Module):
 
         # neck
         neck_channels = [96, 192, 384]
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.neck_conv0 = BaseConv(neck_channels[2], neck_channels[1], 1, 1, act=self.act)
         self.neck_conv1 = BaseConv(neck_channels[1], neck_channels[0], 1, 1, act=self.act)
         self.neck_conv2 = BaseConv(neck_channels[0], neck_channels[0], 3, 2, act=self.act)
@@ -240,4 +240,3 @@ class YOLOX(nn.Module):
         ], dim=-1)
 
         return outputs
-    

@@ -83,24 +83,29 @@ def coco_evaluate(predictions, dataset_dir, dataset_name):
         ann_file = f'{dataset_dir}/annotations/instances_val2017.json'
     else:
         raise ValueError(f'Invalid dataset_name: {dataset_name}')
+    print(f'[INFO] {ann_file} Loaded')
     coco_ann = COCO(ann_file)
-    
+
     # --- Convert Predictions to COCO Format ---
-    coco_predictions = []
+    ann_image_ids = list(set([ann['image_id'] for ann in coco_ann.dataset['annotations']]))
+    coco_predictions_ = []
     for prediction in predictions:
         image_id = prediction['image_id']
-        for bbox, score, label in zip(prediction['boxes'], prediction['scores'], prediction['labels']):
-            coco_predictions.append({
-                'image_id': image_id,
-                'category_id': label,
-                'bbox': bbox,
-                'score': score,
-            })
-    coco_predictions = coco_ann.loadRes(coco_predictions)
-            
-    # --- Evaluate ---
-    cocoEval = COCOeval(coco_ann, coco_predictions, 'bbox')
-    cocoEval.params.imgIds = [prediction['image_id'] for prediction in predictions]
+        if (image_id in ann_image_ids):
+            for bbox, score, label in zip(prediction['boxes'], prediction['scores'], prediction['labels']):
+                coco_predictions_.append({
+                    'image_id': image_id,
+                    'category_id': label,
+                    'bbox': bbox.tolist(),
+                    'score': score.item(),
+                    "segmentation": [],
+                })
+        else:
+            print(f'{image_id} is not in annotations')
+    coco_prediction = coco_ann.loadRes(coco_predictions_)
+    
+    cocoEval = COCOeval(coco_ann, coco_prediction, 'bbox')
+    cocoEval.params.imgIds = [prediction['image_id'] for prediction in coco_prediction.dataset['annotations']]
     cocoEval.evaluate()
     cocoEval.accumulate()
     cocoEval.summarize()

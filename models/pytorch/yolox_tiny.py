@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torchvision
 
 from typing import Tuple
 from torchvision import transforms
@@ -44,7 +45,8 @@ class YOLOX_Tiny(PyTorchModelBase):
         height, width = net_input_size[1:]
         self.transform = transforms.Compose([
             PaddingImageTransform((height, width)),
-            transforms.ToTensor()
+            transforms.ToTensor(),
+            #transforms.Lambda(lambda x: x[[2, 1, 0], ...])
         ])
 
     def train(self, trainloader, epochs=10, optim_params=None, output_dir=None) -> None:
@@ -78,13 +80,24 @@ class YOLOX_Tiny(PyTorchModelBase):
 
                 # inference
                 inputs = inputs * 255.0
+                #print(inputs)
+                #xxx
                 outputs = self.net(inputs)
-                print(outputs)
+                #print(outputs[0].shape)
+                #print(outputs[0])
+                #print(outputs[1]['backbone_outputs'])
+                #print(outputs[1]['neck_outputs'])
+                #print(outputs[1]['head_outputs'])
+                #xxx
+                #print(outputs.shape)
+                #print(outputs)
                 inference_time = time.time() - start
                 
                 start = time.time()
                 for output in outputs.cpu().numpy().tolist():
-                    predictions.append(self.decode_predictions(output))
+                    decoded_prediction = self.decode_predictions(output)
+                    if (decoded_prediction is not None):
+                        predictions.append(decoded_prediction)
                 postprocessing_time = time.time() - start
 
                 if (save_dir is not None):
@@ -99,27 +112,6 @@ class YOLOX_Tiny(PyTorchModelBase):
                 processing_time['inference'] += inference_time
                 processing_time['postprocessing'] += postprocessing_time
 
-                # inference
-                #outputs = self.net(inputs * 255.0)
-                inference_time = time.time() - start
-                
-                start = time.time()
-                for output in outputs.cpu().numpy().tolist():
-                    predictions.append(self.decode_predictions(output))
-                postprocessing_time = time.time() - start
-
-                if (save_dir is not None):
-                    for input_tensor in inputs:
-                        sample_idx += 1
-                        input_tensor_name = f'input_{sample_idx:08d}.npy'
-                        input_tensor_names.append(input_tensor_name)
-                        if (save_dir is not None):
-                            np.save(Path(input_tensor_dir, input_tensor_name), input_tensor.to('cpu').detach().numpy())
-                targets += target
-                processing_time['preprocessing'] += np.array(preprocessing_time_).sum()
-                processing_time['inference'] += inference_time
-                processing_time['postprocessing'] += postprocessing_time
-            
         n_data = len(predictions)
         processing_time['preprocessing'] /= n_data
         processing_time['inference'] /= n_data
@@ -127,29 +119,54 @@ class YOLOX_Tiny(PyTorchModelBase):
         
         return predictions, targets, processing_time
     
-    def decode_predictions(self, predictions):
+    def decode_predictions(self, predictions, conf_threshold=0.01, nms_threshold=0.65):
         num_detections = 0
-        threshold=0.5
         
         detections = np.array(predictions)
         bboxes = detections[:, :4]
-        scores = detections[:, 4]
+        box_scores = detections[:, 4]
         class_ids = np.argmax(detections[:, 5:], axis=1)
-        mask = scores >= threshold
+        class_scores = np.max(detections[:, 5:], axis=1)
+
+        mask = (box_scores * class_scores) >= conf_threshold
         bboxes = bboxes[mask]
+
         # --- convert [center_x, center_y, width, height] to [x, y, w, h]
-        bboxes[:, 0] = bboxes[:, 0] - bboxes[:, 2] / 2  # x = center_x - width / 2
-        bboxes[:, 1] = bboxes[:, 1] - bboxes[:, 3] / 2  # y = center_y - height / 2
+        masked_detections = detections[mask]
+        bboxes[:, 0] = masked_detections[:, :4][:, 0] - masked_detections[:, :4][:, 2] / 2  # x = center_x - width / 2
+        bboxes[:, 1] = masked_detections[:, :4][:, 1] - masked_detections[:, :4][:, 3] / 2  # y = center_y - height / 2
 
-        scores = scores[mask]
+        bboxes_corner = masked_detections[:, :4]
+        bboxes_corner[:, 0] = masked_detections[:, 0] - masked_detections[:, 2] / 2
+        bboxes_corner[:, 1] = masked_detections[:, 1] - masked_detections[:, 3] / 2
+        bboxes_corner[:, 2] = masked_detections[:, 0] + masked_detections[:, 2] / 2
+        bboxes_corner[:, 3] = masked_detections[:, 1] + masked_detections[:, 3] / 2
+
+        nms_out_index = torchvision.ops.batched_nms(
+            torch.Tensor(bboxes_corner),
+            torch.Tensor((box_scores * class_scores)[mask]),
+            torch.Tensor(masked_detections[:, 6]),
+            nms_threshold)
+
+        scores = (box_scores * class_scores)[mask]
         classes = class_ids[mask]
-        num_detections += mask.sum()
+        num_detections = len(nms_out_index)
 
-        return {
-            'boxes': bboxes, 
-            'labels': classes, 
-            'scores': scores,
-            'num_detections': num_detections}
+        if (num_detections == 0):
+            return None
+        elif (num_detections == 1):
+            return {
+                'boxes': np.expand_dims(bboxes[nms_out_index], axis=0), 
+                'labels': np.expand_dims(classes[nms_out_index], axis=0), 
+                'scores': np.expand_dims(scores[nms_out_index], axis=0),
+                'num_detections': num_detections}
+        else:
+            return {
+                'boxes': bboxes[nms_out_index], 
+                'labels': classes[nms_out_index], 
+                'scores': scores[nms_out_index],
+                'num_detections': num_detections}
+    
     
     def evaluate(self, y_true, y_pred) -> dict:
         # --- T.B.D ---
