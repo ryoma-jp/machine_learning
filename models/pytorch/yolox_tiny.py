@@ -80,19 +80,9 @@ class YOLOX_Tiny(PyTorchModelBase):
 
                 # inference
                 inputs = inputs * 255.0
-                #print(inputs)
-                #xxx
                 outputs = self.net(inputs)
-                #print(outputs[0].shape)
-                #print(outputs[0])
-                #print(outputs[1]['backbone_outputs'])
-                #print(outputs[1]['neck_outputs'])
-                #print(outputs[1]['head_outputs'])
-                #xxx
-                #print(outputs.shape)
-                #print(outputs)
-                inference_time = time.time() - start
                 
+                inference_time = time.time() - start
                 start = time.time()
                 for output in outputs.cpu().numpy().tolist():
                     decoded_prediction = self.decode_predictions(output)

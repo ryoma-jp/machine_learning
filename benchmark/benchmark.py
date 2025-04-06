@@ -204,8 +204,6 @@ def benchmark(args, device):
                     coef = max(coef_width, coef_height)
                     boxes = np.array([prediction['boxes'][:, 0]*coef, prediction['boxes'][:, 1]*coef, prediction['boxes'][:, 2]*coef, prediction['boxes'][:, 3]*coef]).T
                     prediction['boxes'] = boxes
-                    print(f'prediction boxes: {prediction["boxes"]}')
-                    print(f'target boxes: {target["boxes"]}')
                 else:
                     coef_width = target['image_size'][0] / model_input_size[3]
                     coef_height = target['image_size'][1] / model_input_size[2]
